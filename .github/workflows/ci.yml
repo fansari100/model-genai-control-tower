@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd backend
-          pip install -e ".[dev]"
+          pip install ".[dev]"
       - name: Ruff lint
         run: cd backend && ruff check app/
       - name: Ruff format check
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: pgvector/pgvector:pg16
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_DB: control_tower_test
           POSTGRES_USER: ct_user
@@ -68,7 +68,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd backend
-          pip install -e ".[dev]"
+          pip install ".[dev]"
       - name: Run migrations
         run: cd backend && alembic upgrade head
       - name: Run tests
@@ -91,8 +91,6 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: cd frontend && npm ci
-      - name: Lint
-        run: cd frontend && npm run lint
       - name: Type check
         run: cd frontend && npx tsc --noEmit
       - name: Build

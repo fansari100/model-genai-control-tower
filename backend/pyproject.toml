@@ -3,7 +3,7 @@ name = "control-tower-backend"
 version = "1.0.0"
 description = "Unified Model, Tool & GenAI Control Tower – Backend API"
 requires-python = ">=3.13"
-license = { text = "Proprietary" }
+license = "LicenseRef-Proprietary"
 authors = [{ name = "Control Tower Team" }]
 
 dependencies = [
@@ -91,6 +91,10 @@ dev = [
     "types-pyyaml",
     "types-markdown",
 ]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["alembic*", "tests*", "scripts*"]
 
 [build-system]
 requires = ["setuptools>=75.0", "wheel"]
