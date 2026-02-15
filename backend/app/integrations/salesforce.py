@@ -10,8 +10,6 @@ Used by the Debrief meeting summarizer use case to:
 
 from __future__ import annotations
 
-from typing import Any
-
 import httpx
 import structlog
 

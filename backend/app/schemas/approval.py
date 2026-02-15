@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.approval import ApprovalDecision, ApprovalGateType
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from app.models.approval import ApprovalDecision, ApprovalGateType
 
 
 class ApprovalCreate(BaseModel):

@@ -3,16 +3,21 @@
 from __future__ import annotations
 
 import enum
+from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, Text, Enum as SAEnum
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.base import TimestampMixin, AuditMixin, generate_uuid
+from app.models.base import AuditMixin, TimestampMixin, generate_uuid
+
+if TYPE_CHECKING:
+    from app.models.genai_use_case import GenAIUseCase
 
 
-class ApprovalDecision(str, enum.Enum):
+class ApprovalDecision(enum.StrEnum):
     APPROVED = "approved"
     CONDITIONAL = "conditional"
     REJECTED = "rejected"
@@ -20,7 +25,7 @@ class ApprovalDecision(str, enum.Enum):
     DEFERRED = "deferred"
 
 
-class ApprovalGateType(str, enum.Enum):
+class ApprovalGateType(enum.StrEnum):
     INTAKE_TRIAGE = "intake_triage"
     RISK_ASSESSMENT = "risk_assessment"
     PRE_DEPLOYMENT = "pre_deployment"
@@ -59,9 +64,7 @@ class Approval(Base, TimestampMixin, AuditMixin):
     policy_output: Mapped[dict | None] = mapped_column(JSONB, default=dict)
 
     # Links
-    use_case_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("genai_use_cases.id")
-    )
+    use_case_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("genai_use_cases.id"))
     model_id: Mapped[str | None] = mapped_column(String(36))
     tool_id: Mapped[str | None] = mapped_column(String(36))
 
@@ -74,10 +77,7 @@ class Approval(Base, TimestampMixin, AuditMixin):
     metadata_extra: Mapped[dict | None] = mapped_column(JSONB, default=dict)
 
     # Relationships
-    use_case: Mapped["GenAIUseCase | None"] = relationship(back_populates="approvals")
+    use_case: Mapped[GenAIUseCase | None] = relationship(back_populates="approvals")
 
     def __repr__(self) -> str:
         return f"<Approval id={self.id} gate={self.gate_type} decision={self.decision}>"
-
-
-from app.models.genai_use_case import GenAIUseCase  # noqa: E402

@@ -2,16 +2,22 @@
 
 from __future__ import annotations
 
-from sqlalchemy import String, Text, Enum as SAEnum
+import enum
+from typing import TYPE_CHECKING
+
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy import String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-import enum
 
 from app.database import Base
-from app.models.base import TimestampMixin, SoftDeleteMixin, AuditMixin, generate_uuid
+from app.models.base import AuditMixin, SoftDeleteMixin, TimestampMixin, generate_uuid
+
+if TYPE_CHECKING:
+    from app.models.model import Model
 
 
-class VendorSecurityPosture(str, enum.Enum):
+class VendorSecurityPosture(enum.StrEnum):
     APPROVED = "approved"
     CONDITIONAL = "conditional"
     UNDER_REVIEW = "under_review"
@@ -43,11 +49,10 @@ class Vendor(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
     # e.g. {"threat_model_coverage": "high", "eval_rigor": "medium", ...}
 
     # Relationships
-    models: Mapped[list["Model"]] = relationship(back_populates="vendor", lazy="selectin")
+    models: Mapped[list[Model]] = relationship(back_populates="vendor", lazy="selectin")
 
     def __repr__(self) -> str:
         return f"<Vendor id={self.id} name={self.name}>"
 
 
 # Avoid circular import – used only for type hints
-from app.models.model import Model  # noqa: E402

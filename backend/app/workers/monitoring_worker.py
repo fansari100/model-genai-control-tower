@@ -11,7 +11,7 @@ Implements FINRA-aligned ongoing monitoring:
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -130,11 +130,13 @@ class MonitoringWorker:
                     "direction": direction,
                 }
                 thresholds_breached.append(breach)
-                alerts_fired.append({
-                    "severity": "critical" if direction == "below_minimum" else "warning",
-                    "message": f"{metric_name} = {current_value:.3f} breaches threshold {threshold_value}",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                })
+                alerts_fired.append(
+                    {
+                        "severity": "critical" if direction == "below_minimum" else "warning",
+                        "message": f"{metric_name} = {current_value:.3f} breaches threshold {threshold_value}",
+                        "timestamp": datetime.now(UTC).isoformat(),
+                    }
+                )
 
         # ── Step 3: Drift detection ──────────────────────────
         drift_detected = len(thresholds_breached) > 0
@@ -151,7 +153,7 @@ class MonitoringWorker:
         result = {
             "plan_id": plan_id,
             "status": "completed",
-            "executed_at": datetime.now(timezone.utc).isoformat(),
+            "executed_at": datetime.now(UTC).isoformat(),
             "duration_seconds": round(duration, 2),
             "metrics": metrics,
             "total_canaries": total_canaries,

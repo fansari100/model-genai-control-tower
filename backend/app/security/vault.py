@@ -11,7 +11,6 @@ auto-rotated secrets from Vault. Supports:
 
 from __future__ import annotations
 
-from functools import lru_cache
 from typing import Any
 
 import structlog
@@ -49,6 +48,7 @@ class VaultClient:
             except FileNotFoundError:
                 # Not in K8s — fall back to token from env
                 import os
+
                 vault_token = os.environ.get("VAULT_TOKEN", "")
                 vault_url = os.environ.get("VAULT_ADDR", "http://localhost:8200")
                 self._client = hvac.Client(url=vault_url, token=vault_token)
@@ -73,9 +73,7 @@ class VaultClient:
         if client is None:
             return {}
         try:
-            response = client.secrets.kv.v2.read_secret_version(
-                path=path, mount_point=mount_point
-            )
+            response = client.secrets.kv.v2.read_secret_version(path=path, mount_point=mount_point)
             return response["data"]["data"]
         except Exception as e:
             logger.error("vault_read_failed", path=path, error=str(e))
@@ -105,6 +103,7 @@ class VaultClient:
             return plaintext
         try:
             import base64
+
             encoded = base64.b64encode(plaintext.encode()).decode()
             result = client.secrets.transit.encrypt_data(name=key_name, plaintext=encoded)
             return result["data"]["ciphertext"]
@@ -119,6 +118,7 @@ class VaultClient:
             return ciphertext
         try:
             import base64
+
             result = client.secrets.transit.decrypt_data(name=key_name, ciphertext=ciphertext)
             return base64.b64decode(result["data"]["plaintext"]).decode()
         except Exception as e:

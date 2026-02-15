@@ -30,6 +30,7 @@ def _get_presidio_analyzer():
     """Lazy-load Presidio analyzer with caching."""
     try:
         from presidio_analyzer import AnalyzerEngine
+
         analyzer = AnalyzerEngine()
         logger.info("presidio_analyzer_loaded")
         return analyzer
@@ -46,6 +47,7 @@ def _get_presidio_anonymizer():
     """Lazy-load Presidio anonymizer with caching."""
     try:
         from presidio_anonymizer import AnonymizerEngine
+
         return AnonymizerEngine()
     except ImportError:
         return None
@@ -70,9 +72,18 @@ def redact_pii(text: str, language: str = "en") -> str:
                 text=text,
                 language=language,
                 entities=[
-                    "PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD",
-                    "US_SSN", "US_BANK_NUMBER", "IP_ADDRESS", "LOCATION",
-                    "DATE_TIME", "NRP", "MEDICAL_LICENSE", "URL",
+                    "PERSON",
+                    "EMAIL_ADDRESS",
+                    "PHONE_NUMBER",
+                    "CREDIT_CARD",
+                    "US_SSN",
+                    "US_BANK_NUMBER",
+                    "IP_ADDRESS",
+                    "LOCATION",
+                    "DATE_TIME",
+                    "NRP",
+                    "MEDICAL_LICENSE",
+                    "URL",
                 ],
                 score_threshold=0.5,
             )
@@ -94,8 +105,16 @@ def redact_dict_values(data: dict, keys_to_redact: set[str] | None = None) -> di
     """Recursively redact string values in a dictionary."""
     if keys_to_redact is None:
         keys_to_redact = {
-            "prompt", "output", "input", "response", "message",
-            "content", "text", "transcript", "notes", "email_body",
+            "prompt",
+            "output",
+            "input",
+            "response",
+            "message",
+            "content",
+            "text",
+            "transcript",
+            "notes",
+            "email_body",
         }
 
     result = {}
@@ -106,8 +125,7 @@ def redact_dict_values(data: dict, keys_to_redact: set[str] | None = None) -> di
             result[key] = redact_dict_values(value, keys_to_redact)
         elif isinstance(value, list):
             result[key] = [
-                redact_dict_values(v, keys_to_redact) if isinstance(v, dict) else v
-                for v in value
+                redact_dict_values(v, keys_to_redact) if isinstance(v, dict) else v for v in value
             ]
         else:
             result[key] = value

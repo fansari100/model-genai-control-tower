@@ -107,7 +107,16 @@ src = ["app"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM", "TCH", "RUF"]
-ignore = ["E501"]
+ignore = [
+    "E501",    # line too long (handled by formatter)
+    "B008",    # function call in default arg (FastAPI Depends() pattern)
+    "B904",    # raise from (verbose in HTTP handlers)
+    "RUF001",  # ambiguous unicode (em-dashes in docstrings are intentional)
+    "RUF002",  # ambiguous unicode in docstring
+    "RUF003",  # ambiguous unicode in comment
+    "A003",    # class attribute shadowing builtin (e.g. `id`, `type`)
+    "UP007",   # use X | Y for union (conflicts with older runtime)
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

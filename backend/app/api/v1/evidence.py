@@ -2,18 +2,22 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
+from typing import TYPE_CHECKING
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import CurrentUser, get_current_user
 from app.database import get_db
 from app.models.evidence import ArtifactType, EvidenceArtifact, RetentionTag
 from app.schemas.common import PaginatedResponse
-from app.schemas.evidence import EvidenceCreate, EvidenceResponse
+from app.schemas.evidence import EvidenceResponse
 from app.services.audit_events import emit_evidence_stored
-from app.services.evidence import create_evidence_artifact, serialize_for_evidence
+from app.services.evidence import create_evidence_artifact
 from app.services.storage import storage_client
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 

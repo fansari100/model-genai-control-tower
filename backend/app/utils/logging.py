@@ -21,7 +21,7 @@ from app.config import get_settings
 def setup_logging() -> None:
     """Configure structlog and standard logging."""
     settings = get_settings()
-    
+
     # Common processors
     processors = [
         structlog.contextvars.merge_contextvars,
@@ -47,9 +47,7 @@ def setup_logging() -> None:
     else:
         # Console renderer for human readability
         processors.append(structlog.dev.ConsoleRenderer())
-        formatter = structlog.stdlib.ProcessorFormatter(
-            processor=structlog.dev.ConsoleRenderer()
-        )
+        formatter = structlog.stdlib.ProcessorFormatter(processor=structlog.dev.ConsoleRenderer())
 
     # Configure structlog
     structlog.configure(
@@ -62,7 +60,7 @@ def setup_logging() -> None:
     # Intercept standard library logging
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
-    
+
     root_logger = logging.getLogger()
     root_logger.handlers = [handler]
     root_logger.setLevel(settings.log_level.upper())

@@ -8,8 +8,7 @@ Extracts user identity and roles, provides FastAPI dependencies for RBAC.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
-from functools import lru_cache
+from enum import StrEnum
 
 import httpx
 import structlog
@@ -23,7 +22,7 @@ logger = structlog.get_logger()
 security = HTTPBearer(auto_error=False)
 
 
-class Role(str, Enum):
+class Role(StrEnum):
     ADMIN = "admin"
     MODEL_RISK_OFFICER = "model_risk_officer"
     MODEL_CONTROL_ANALYST = "model_control_analyst"
@@ -69,8 +68,7 @@ async def _fetch_jwks() -> dict:
 
     settings = get_settings()
     jwks_url = (
-        f"{settings.keycloak_url}/realms/{settings.keycloak_realm}"
-        f"/protocol/openid-connect/certs"
+        f"{settings.keycloak_url}/realms/{settings.keycloak_realm}/protocol/openid-connect/certs"
     )
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -95,8 +93,7 @@ async def _decode_token(token: str) -> dict:
     settings = get_settings()
 
     try:
-        from jose import jwt, JWTError, jwk
-        from jose.utils import base64url_decode
+        from jose import jwt
 
         # Fetch JWKS from Keycloak
         jwks = await _fetch_jwks()
@@ -199,11 +196,11 @@ async def get_current_user(
     realm_access = payload.get("realm_access", {})
     token_roles = realm_access.get("roles", [])
     mapped_roles: list[Role] = []
+    import contextlib
+
     for r in token_roles:
-        try:
+        with contextlib.suppress(ValueError):
             mapped_roles.append(Role(r))
-        except ValueError:
-            pass  # Ignore roles not in our enum
 
     return CurrentUser(
         sub=payload.get("sub", ""),

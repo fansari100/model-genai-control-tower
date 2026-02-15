@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
 
 import structlog
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 logger = structlog.get_logger()
 
@@ -21,8 +19,9 @@ class IntegrationError(Exception):
         super().__init__(f"[{integration}] {operation}: {detail}")
 
 
-class CircuitOpen(IntegrationError):
+class CircuitOpenError(IntegrationError):
     """Circuit breaker is open — integration temporarily disabled."""
+
     pass
 
 
@@ -44,16 +43,20 @@ class CircuitBreaker:
     def record_failure(self) -> None:
         self._failure_count += 1
         import time
+
         self._last_failure_time = time.monotonic()
         if self._failure_count >= self.failure_threshold:
             self._state = "open"
-            logger.warning("circuit_breaker_opened", integration=self.name, failures=self._failure_count)
+            logger.warning(
+                "circuit_breaker_opened", integration=self.name, failures=self._failure_count
+            )
 
     def allow_request(self) -> bool:
         if self._state == "closed":
             return True
         if self._state == "open":
             import time
+
             if time.monotonic() - self._last_failure_time > self.reset_timeout:
                 self._state = "half-open"
                 return True
@@ -76,4 +79,4 @@ class BaseIntegration(ABC):
 
     def _check_circuit(self) -> None:
         if not self._circuit.allow_request():
-            raise CircuitOpen(self.name, "request", "circuit breaker is open")
+            raise CircuitOpenError(self.name, "request", "circuit breaker is open")

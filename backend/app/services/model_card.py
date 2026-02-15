@@ -12,16 +12,20 @@ Complements AIBOM (supply chain) with Human-Centric transparency.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import structlog
-from app.models.model import Model
-from app.models.evaluation import EvaluationRun
+
+if TYPE_CHECKING:
+    from app.models.evaluation import EvaluationRun
+    from app.models.model import Model
 
 logger = structlog.get_logger()
 
 
 def generate_model_card(model: Model, eval_runs: list[EvaluationRun]) -> str:
     """Generate a Markdown Model Card."""
-    
+
     # Calculate aggregate performance metrics
     metrics_summary = ""
     if eval_runs:
@@ -40,7 +44,7 @@ def generate_model_card(model: Model, eval_runs: list[EvaluationRun]) -> str:
 - **Version:** {model.version}
 - **Type:** {model.model_type.value}
 - **Provider:** {model.provider_model_id or "Self-hosted"}
-- **Release Date:** {model.created_at.strftime('%Y-%m-%d')}
+- **Release Date:** {model.created_at.strftime("%Y-%m-%d")}
 - **Owner:** {model.owner} ({model.business_unit})
 - **Risk Tier:** {model.risk_tier.value}
 

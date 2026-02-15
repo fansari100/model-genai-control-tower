@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 import enum
-from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, String, Text, Enum as SAEnum
+from sqlalchemy import DateTime, String, Text
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.base import TimestampMixin, SoftDeleteMixin, AuditMixin, generate_uuid
+from app.models.base import AuditMixin, SoftDeleteMixin, TimestampMixin, generate_uuid
+
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from app.models.genai_use_case import UseCaseToolLink
 
 
-class ToolCategory(str, enum.Enum):
+class ToolCategory(enum.StrEnum):
     EUC_SPREADSHEET = "euc_spreadsheet"
     EUC_VBA = "euc_vba"
     SYSTEM_CALCULATOR = "system_calculator"
@@ -25,14 +31,14 @@ class ToolCategory(str, enum.Enum):
     OTHER = "other"
 
 
-class ToolCriticality(str, enum.Enum):
+class ToolCriticality(enum.StrEnum):
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
 
 
-class ToolStatus(str, enum.Enum):
+class ToolStatus(enum.StrEnum):
     ACTIVE = "active"
     UNDER_REVIEW = "under_review"
     ATTESTED = "attested"
@@ -97,12 +103,9 @@ class Tool(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
     metadata_extra: Mapped[dict | None] = mapped_column(JSONB, default=dict)
 
     # Relationships
-    use_case_links: Mapped[list["UseCaseToolLink"]] = relationship(
+    use_case_links: Mapped[list[UseCaseToolLink]] = relationship(
         back_populates="tool", lazy="selectin"
     )
 
     def __repr__(self) -> str:
         return f"<Tool id={self.id} name={self.name} category={self.category}>"
-
-
-from app.models.genai_use_case import UseCaseToolLink  # noqa: E402

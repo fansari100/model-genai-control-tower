@@ -4,17 +4,20 @@ from __future__ import annotations
 
 import hashlib
 import json
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import CurrentUser, get_current_user, require_approver
+from app.auth import CurrentUser, require_approver
 from app.database import get_db
 from app.models.approval import Approval, ApprovalDecision, ApprovalGateType
 from app.schemas.approval import ApprovalCreate, ApprovalResponse
 from app.schemas.common import PaginatedResponse
 from app.services.audit_events import emit_approval
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 

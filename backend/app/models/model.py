@@ -3,16 +3,23 @@
 from __future__ import annotations
 
 import enum
+from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, Text, Integer, Enum as SAEnum
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.base import TimestampMixin, SoftDeleteMixin, AuditMixin, generate_uuid
+from app.models.base import AuditMixin, SoftDeleteMixin, TimestampMixin, generate_uuid
+
+if TYPE_CHECKING:
+    from app.models.evaluation import EvaluationRun
+    from app.models.genai_use_case import UseCaseModelLink
+    from app.models.vendor import Vendor
 
 
-class ModelType(str, enum.Enum):
+class ModelType(enum.StrEnum):
     STATISTICAL = "statistical"
     ML_TRADITIONAL = "ml_traditional"
     DEEP_LEARNING = "deep_learning"
@@ -21,14 +28,14 @@ class ModelType(str, enum.Enum):
     ENSEMBLE = "ensemble"
 
 
-class ModelDeployment(str, enum.Enum):
+class ModelDeployment(enum.StrEnum):
     VENDOR_API = "vendor_api"
     SELF_HOSTED = "self_hosted"
     ON_PREMISE = "on_premise"
     HYBRID = "hybrid"
 
 
-class ModelStatus(str, enum.Enum):
+class ModelStatus(enum.StrEnum):
     DRAFT = "draft"
     INTAKE = "intake"
     UNDER_REVIEW = "under_review"
@@ -38,7 +45,7 @@ class ModelStatus(str, enum.Enum):
     RETIRED = "retired"
 
 
-class RiskTier(str, enum.Enum):
+class RiskTier(enum.StrEnum):
     TIER_1_CRITICAL = "tier_1_critical"
     TIER_2_HIGH = "tier_2_high"
     TIER_3_MEDIUM = "tier_3_medium"
@@ -106,11 +113,11 @@ class Model(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
     )
 
     # Relationships
-    vendor: Mapped["Vendor | None"] = relationship(back_populates="models", lazy="selectin")
-    use_case_links: Mapped[list["UseCaseModelLink"]] = relationship(
+    vendor: Mapped[Vendor | None] = relationship(back_populates="models", lazy="selectin")
+    use_case_links: Mapped[list[UseCaseModelLink]] = relationship(
         back_populates="model", lazy="selectin"
     )
-    evaluation_runs: Mapped[list["EvaluationRun"]] = relationship(
+    evaluation_runs: Mapped[list[EvaluationRun]] = relationship(
         back_populates="model", lazy="selectin"
     )
 
@@ -119,6 +126,3 @@ class Model(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
 
 
 # Resolve forward references for relationship type annotations
-from app.models.vendor import Vendor  # noqa: E402
-from app.models.genai_use_case import UseCaseModelLink  # noqa: E402
-from app.models.evaluation import EvaluationRun  # noqa: E402

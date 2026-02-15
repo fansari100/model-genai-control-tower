@@ -10,7 +10,7 @@ from __future__ import annotations
 import time
 import uuid
 from contextlib import asynccontextmanager
-from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING
 
 import structlog
 from fastapi import FastAPI, Request, Response
@@ -24,6 +24,9 @@ from app.config import get_settings
 from app.services.audit_events import audit_publisher
 from app.utils.logging import setup_logging
 from app.utils.otel import setup_telemetry
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 # Initialize structured logging immediately
 setup_logging()

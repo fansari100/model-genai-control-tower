@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.model import Model, ModelStatus, ModelType, RiskTier
 from app.schemas.common import PaginatedResponse
 from app.schemas.model import ModelCreate, ModelListResponse, ModelResponse, ModelUpdate
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -81,9 +85,7 @@ async def get_model(model_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/{model_id}", response_model=ModelResponse)
-async def update_model(
-    model_id: str, payload: ModelUpdate, db: AsyncSession = Depends(get_db)
-):
+async def update_model(model_id: str, payload: ModelUpdate, db: AsyncSession = Depends(get_db)):
     """Update model details."""
     model = await db.get(Model, model_id)
     if not model or model.is_deleted:
@@ -123,9 +125,17 @@ async def transition_model_status(
     valid_transitions: dict[ModelStatus, list[ModelStatus]] = {
         ModelStatus.DRAFT: [ModelStatus.INTAKE],
         ModelStatus.INTAKE: [ModelStatus.UNDER_REVIEW, ModelStatus.DRAFT],
-        ModelStatus.UNDER_REVIEW: [ModelStatus.APPROVED, ModelStatus.CONDITIONAL, ModelStatus.DRAFT],
+        ModelStatus.UNDER_REVIEW: [
+            ModelStatus.APPROVED,
+            ModelStatus.CONDITIONAL,
+            ModelStatus.DRAFT,
+        ],
         ModelStatus.APPROVED: [ModelStatus.DEPRECATED, ModelStatus.UNDER_REVIEW],
-        ModelStatus.CONDITIONAL: [ModelStatus.APPROVED, ModelStatus.DEPRECATED, ModelStatus.UNDER_REVIEW],
+        ModelStatus.CONDITIONAL: [
+            ModelStatus.APPROVED,
+            ModelStatus.DEPRECATED,
+            ModelStatus.UNDER_REVIEW,
+        ],
         ModelStatus.DEPRECATED: [ModelStatus.RETIRED, ModelStatus.UNDER_REVIEW],
         ModelStatus.RETIRED: [],
     }

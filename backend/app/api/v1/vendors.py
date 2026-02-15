@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.vendor import Vendor
 from app.schemas.common import PaginatedResponse
 from app.schemas.vendor import VendorCreate, VendorListResponse, VendorResponse, VendorUpdate
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -31,7 +35,9 @@ async def list_vendors(
 
     total = (await db.execute(count_query)).scalar_one()
     offset = (page - 1) * page_size
-    result = await db.execute(query.offset(offset).limit(page_size).order_by(Vendor.created_at.desc()))
+    result = await db.execute(
+        query.offset(offset).limit(page_size).order_by(Vendor.created_at.desc())
+    )
     vendors = result.scalars().all()
 
     return PaginatedResponse(
@@ -63,9 +69,7 @@ async def get_vendor(vendor_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/{vendor_id}", response_model=VendorResponse)
-async def update_vendor(
-    vendor_id: str, payload: VendorUpdate, db: AsyncSession = Depends(get_db)
-):
+async def update_vendor(vendor_id: str, payload: VendorUpdate, db: AsyncSession = Depends(get_db)):
     """Update a vendor."""
     vendor = await db.get(Vendor, vendor_id)
     if not vendor or vendor.is_deleted:

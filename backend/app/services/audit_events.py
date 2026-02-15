@@ -11,8 +11,8 @@ These events form the append-only audit log required by SR 11-7 and FINRA.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 import structlog
@@ -23,7 +23,7 @@ from app.utils.hashing import sha256_dict
 logger = structlog.get_logger()
 
 
-class AuditEventType(str, Enum):
+class AuditEventType(StrEnum):
     """Governance event taxonomy – every event is typed and versioned."""
 
     # Inventory
@@ -95,7 +95,7 @@ class AuditEvent:
         self.actor = actor
         self.data = data or {}
         self.metadata = metadata or {}
-        self.timestamp = datetime.now(timezone.utc).isoformat()
+        self.timestamp = datetime.now(UTC).isoformat()
         self.version = "1.0"
 
     def to_dict(self) -> dict[str, Any]:
@@ -172,7 +172,9 @@ class AuditEventPublisher:
                         key=event.entity_id.encode("utf-8"),
                     )
                 except Exception as e:
-                    logger.error("kafka_publish_failed", error=str(e), event_type=event.event_type.value)
+                    logger.error(
+                        "kafka_publish_failed", error=str(e), event_type=event.event_type.value
+                    )
 
     async def close(self) -> None:
         """Gracefully shut down the producer."""
@@ -189,24 +191,28 @@ audit_publisher = AuditEventPublisher()
 
 
 async def emit_use_case_intake(use_case_id: str, risk_rating: str, actor: str = "system") -> None:
-    await audit_publisher.publish(AuditEvent(
-        event_type=AuditEventType.USE_CASE_INTAKE,
-        entity_type="genai_use_case",
-        entity_id=use_case_id,
-        actor=actor,
-        data={"risk_rating": risk_rating},
-    ))
+    await audit_publisher.publish(
+        AuditEvent(
+            event_type=AuditEventType.USE_CASE_INTAKE,
+            entity_type="genai_use_case",
+            entity_id=use_case_id,
+            actor=actor,
+            data={"risk_rating": risk_rating},
+        )
+    )
 
 
 async def emit_eval_completed(
     run_id: str, eval_type: str, pass_rate: float, use_case_id: str = ""
 ) -> None:
-    await audit_publisher.publish(AuditEvent(
-        event_type=AuditEventType.EVAL_RUN_COMPLETED,
-        entity_type="evaluation_run",
-        entity_id=run_id,
-        data={"eval_type": eval_type, "pass_rate": pass_rate, "use_case_id": use_case_id},
-    ))
+    await audit_publisher.publish(
+        AuditEvent(
+            event_type=AuditEventType.EVAL_RUN_COMPLETED,
+            entity_type="evaluation_run",
+            entity_id=run_id,
+            data={"eval_type": eval_type, "pass_rate": pass_rate, "use_case_id": use_case_id},
+        )
+    )
 
 
 async def emit_approval(
@@ -218,24 +224,28 @@ async def emit_approval(
         "conditional": AuditEventType.APPROVAL_CONDITIONAL,
     }.get(decision, AuditEventType.APPROVAL_GRANTED)
 
-    await audit_publisher.publish(AuditEvent(
-        event_type=event_type,
-        entity_type="approval",
-        entity_id=approval_id,
-        actor=approver,
-        data={"decision": decision, "gate_type": gate_type, "use_case_id": use_case_id},
-    ))
+    await audit_publisher.publish(
+        AuditEvent(
+            event_type=event_type,
+            entity_type="approval",
+            entity_id=approval_id,
+            actor=approver,
+            data={"decision": decision, "gate_type": gate_type, "use_case_id": use_case_id},
+        )
+    )
 
 
 async def emit_finding_created(
     finding_id: str, severity: str, source: str, owasp_risk_id: str | None = None
 ) -> None:
-    await audit_publisher.publish(AuditEvent(
-        event_type=AuditEventType.FINDING_CREATED,
-        entity_type="finding",
-        entity_id=finding_id,
-        data={"severity": severity, "source": source, "owasp_risk_id": owasp_risk_id},
-    ))
+    await audit_publisher.publish(
+        AuditEvent(
+            event_type=AuditEventType.FINDING_CREATED,
+            entity_type="finding",
+            entity_id=finding_id,
+            data={"severity": severity, "source": source, "owasp_risk_id": owasp_risk_id},
+        )
+    )
 
 
 async def emit_guardrail_action(
@@ -246,20 +256,22 @@ async def emit_guardrail_action(
         if action == "block"
         else AuditEventType.GUARDRAIL_ESCALATED
     )
-    await audit_publisher.publish(AuditEvent(
-        event_type=event_type,
-        entity_type="guardrail",
-        entity_id=stage,
-        data={"action": action, "reason": reason, "context": context},
-    ))
+    await audit_publisher.publish(
+        AuditEvent(
+            event_type=event_type,
+            entity_type="guardrail",
+            entity_id=stage,
+            data={"action": action, "reason": reason, "context": context},
+        )
+    )
 
 
-async def emit_evidence_stored(
-    artifact_id: str, artifact_type: str, content_hash: str
-) -> None:
-    await audit_publisher.publish(AuditEvent(
-        event_type=AuditEventType.EVIDENCE_STORED,
-        entity_type="evidence_artifact",
-        entity_id=artifact_id,
-        data={"artifact_type": artifact_type, "content_hash": content_hash[:16]},
-    ))
+async def emit_evidence_stored(artifact_id: str, artifact_type: str, content_hash: str) -> None:
+    await audit_publisher.publish(
+        AuditEvent(
+            event_type=AuditEventType.EVIDENCE_STORED,
+            entity_type="evidence_artifact",
+            entity_id=artifact_id,
+            data={"artifact_type": artifact_type, "content_hash": content_hash[:16]},
+        )
+    )

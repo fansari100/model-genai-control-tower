@@ -28,6 +28,4 @@ api_router.include_router(findings.router, prefix="/findings", tags=["Findings"]
 api_router.include_router(approvals.router, prefix="/approvals", tags=["Approvals"])
 api_router.include_router(evidence.router, prefix="/evidence", tags=["Evidence"])
 api_router.include_router(monitoring.router, prefix="/monitoring", tags=["Monitoring"])
-api_router.include_router(
-    certifications.router, prefix="/certifications", tags=["Certifications"]
-)
+api_router.include_router(certifications.router, prefix="/certifications", tags=["Certifications"])

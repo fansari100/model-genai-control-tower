@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
@@ -83,7 +83,7 @@ def create_evidence_artifact(
     previous_chain_hash = previous_artifact.chain_hash if previous_artifact else None
     chain_hash = compute_chain_hash(content_hash, previous_chain_hash)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     retention_until = now + RETENTION_DURATIONS[retention_tag]
 
     storage_key = build_storage_key(artifact_type, use_case_id, artifact_id, content_type)
@@ -137,14 +137,16 @@ def verify_chain_integrity(artifacts: list[EvidenceArtifact]) -> dict:
         if not valid:
             is_valid = False
 
-        results.append({
-            "artifact_id": artifact.id,
-            "position": i,
-            "content_hash": artifact.content_hash,
-            "chain_hash": artifact.chain_hash,
-            "expected_chain_hash": expected_chain,
-            "valid": valid,
-        })
+        results.append(
+            {
+                "artifact_id": artifact.id,
+                "position": i,
+                "content_hash": artifact.content_hash,
+                "chain_hash": artifact.chain_hash,
+                "expected_chain_hash": expected_chain,
+                "valid": valid,
+            }
+        )
 
     return {
         "chain_length": len(artifacts),

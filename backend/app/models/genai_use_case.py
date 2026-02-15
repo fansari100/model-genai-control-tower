@@ -3,16 +3,26 @@
 from __future__ import annotations
 
 import enum
+from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, String, Text, Enum as SAEnum
+from sqlalchemy import Boolean, ForeignKey, String, Text
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.base import TimestampMixin, SoftDeleteMixin, AuditMixin, generate_uuid
+from app.models.base import AuditMixin, SoftDeleteMixin, TimestampMixin, generate_uuid
+
+if TYPE_CHECKING:
+    from app.models.approval import Approval
+    from app.models.evaluation import EvaluationRun
+    from app.models.finding import Finding
+    from app.models.model import Model
+    from app.models.monitoring import MonitoringPlan
+    from app.models.tool import Tool
 
 
-class UseCaseCategory(str, enum.Enum):
+class UseCaseCategory(enum.StrEnum):
     RAG_QA = "rag_qa"
     SUMMARIZATION = "summarization"
     CONTENT_GENERATION = "content_generation"
@@ -24,7 +34,7 @@ class UseCaseCategory(str, enum.Enum):
     OTHER = "other"
 
 
-class DataClassification(str, enum.Enum):
+class DataClassification(enum.StrEnum):
     PUBLIC = "public"
     INTERNAL = "internal"
     CONFIDENTIAL = "confidential"
@@ -32,7 +42,7 @@ class DataClassification(str, enum.Enum):
     RESTRICTED = "restricted"
 
 
-class UseCaseStatus(str, enum.Enum):
+class UseCaseStatus(enum.StrEnum):
     DRAFT = "draft"
     INTAKE = "intake"
     RISK_ASSESSMENT = "risk_assessment"
@@ -46,7 +56,7 @@ class UseCaseStatus(str, enum.Enum):
     RETIRED = "retired"
 
 
-class RiskRating(str, enum.Enum):
+class RiskRating(enum.StrEnum):
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -126,22 +136,18 @@ class GenAIUseCase(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
     metadata_extra: Mapped[dict | None] = mapped_column(JSONB, default=dict)
 
     # Relationships
-    model_links: Mapped[list["UseCaseModelLink"]] = relationship(
+    model_links: Mapped[list[UseCaseModelLink]] = relationship(
         back_populates="use_case", lazy="selectin", cascade="all, delete-orphan"
     )
-    tool_links: Mapped[list["UseCaseToolLink"]] = relationship(
+    tool_links: Mapped[list[UseCaseToolLink]] = relationship(
         back_populates="use_case", lazy="selectin", cascade="all, delete-orphan"
     )
-    evaluation_runs: Mapped[list["EvaluationRun"]] = relationship(
+    evaluation_runs: Mapped[list[EvaluationRun]] = relationship(
         back_populates="use_case", lazy="selectin"
     )
-    findings: Mapped[list["Finding"]] = relationship(
-        back_populates="use_case", lazy="selectin"
-    )
-    approvals: Mapped[list["Approval"]] = relationship(
-        back_populates="use_case", lazy="selectin"
-    )
-    monitoring_plans: Mapped[list["MonitoringPlan"]] = relationship(
+    findings: Mapped[list[Finding]] = relationship(back_populates="use_case", lazy="selectin")
+    approvals: Mapped[list[Approval]] = relationship(back_populates="use_case", lazy="selectin")
+    monitoring_plans: Mapped[list[MonitoringPlan]] = relationship(
         back_populates="use_case", lazy="selectin"
     )
 
@@ -158,15 +164,13 @@ class UseCaseModelLink(Base, TimestampMixin):
     use_case_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("genai_use_cases.id"), nullable=False
     )
-    model_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("models.id"), nullable=False
-    )
+    model_id: Mapped[str] = mapped_column(String(36), ForeignKey("models.id"), nullable=False)
     role: Mapped[str] = mapped_column(String(50), default="primary")
     # e.g. "primary", "fallback", "evaluator", "classifier"
     configuration: Mapped[dict | None] = mapped_column(JSONB, default=dict)
 
-    use_case: Mapped["GenAIUseCase"] = relationship(back_populates="model_links")
-    model: Mapped["Model"] = relationship(back_populates="use_case_links")
+    use_case: Mapped[GenAIUseCase] = relationship(back_populates="model_links")
+    model: Mapped[Model] = relationship(back_populates="use_case_links")
 
 
 class UseCaseToolLink(Base, TimestampMixin):
@@ -178,20 +182,10 @@ class UseCaseToolLink(Base, TimestampMixin):
     use_case_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("genai_use_cases.id"), nullable=False
     )
-    tool_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("tools.id"), nullable=False
-    )
+    tool_id: Mapped[str] = mapped_column(String(36), ForeignKey("tools.id"), nullable=False)
     purpose: Mapped[str | None] = mapped_column(String(255))
     permission_scope: Mapped[str | None] = mapped_column(String(100))
     requires_approval: Mapped[bool] = mapped_column(default=False)
 
-    use_case: Mapped["GenAIUseCase"] = relationship(back_populates="tool_links")
-    tool: Mapped["Tool"] = relationship(back_populates="use_case_links")
-
-
-from app.models.model import Model  # noqa: E402
-from app.models.tool import Tool  # noqa: E402
-from app.models.evaluation import EvaluationRun  # noqa: E402
-from app.models.finding import Finding  # noqa: E402
-from app.models.approval import Approval  # noqa: E402
-from app.models.monitoring import MonitoringPlan  # noqa: E402
+    use_case: Mapped[GenAIUseCase] = relationship(back_populates="tool_links")
+    tool: Mapped[Tool] = relationship(back_populates="use_case_links")

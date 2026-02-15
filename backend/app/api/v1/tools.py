@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.tool import Tool, ToolCategory, ToolCriticality, ToolStatus
 from app.schemas.common import PaginatedResponse
 from app.schemas.tool import ToolCreate, ToolListResponse, ToolResponse, ToolUpdate
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -78,9 +81,7 @@ async def get_tool(tool_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/{tool_id}", response_model=ToolResponse)
-async def update_tool(
-    tool_id: str, payload: ToolUpdate, db: AsyncSession = Depends(get_db)
-):
+async def update_tool(tool_id: str, payload: ToolUpdate, db: AsyncSession = Depends(get_db)):
     tool = await db.get(Tool, tool_id)
     if not tool or tool.is_deleted:
         raise HTTPException(status_code=404, detail="Tool not found")
@@ -113,7 +114,7 @@ async def attest_tool(tool_id: str, db: AsyncSession = Depends(get_db)):
     if not tool or tool.is_deleted:
         raise HTTPException(status_code=404, detail="Tool not found")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     tool.last_attestation_date = now
     tool.status = ToolStatus.ATTESTED
     if tool.attestation_frequency_days:

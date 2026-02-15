@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 import enum
-from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, Enum as SAEnum
+from sqlalchemy import DateTime, String, Text
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-from app.models.base import TimestampMixin, AuditMixin, generate_uuid
+from app.models.base import AuditMixin, TimestampMixin, generate_uuid
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
-class IssueSource(str, enum.Enum):
+class IssueSource(enum.StrEnum):
     INTERNAL = "internal"
     AUDIT = "audit"
     REGULATORY = "regulatory"
@@ -21,7 +25,7 @@ class IssueSource(str, enum.Enum):
     MONITORING = "monitoring"
 
 
-class IssueStatus(str, enum.Enum):
+class IssueStatus(enum.StrEnum):
     OPEN = "open"
     IN_PROGRESS = "in_progress"
     REMEDIATION = "remediation"
@@ -30,7 +34,7 @@ class IssueStatus(str, enum.Enum):
     OVERDUE = "overdue"
 
 
-class IssuePriority(str, enum.Enum):
+class IssuePriority(enum.StrEnum):
     P1_CRITICAL = "p1_critical"
     P2_HIGH = "p2_high"
     P3_MEDIUM = "p3_medium"

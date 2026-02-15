@@ -3,17 +3,24 @@
 from __future__ import annotations
 
 import enum
-from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, Enum as SAEnum
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.base import TimestampMixin, AuditMixin, generate_uuid
+from app.models.base import AuditMixin, TimestampMixin, generate_uuid
+
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from app.models.genai_use_case import GenAIUseCase
+    from app.models.model import Model
 
 
-class EvalType(str, enum.Enum):
+class EvalType(enum.StrEnum):
     QUALITY_CORRECTNESS = "quality_correctness"
     SAFETY_SECURITY = "safety_security"
     OPERATIONAL_CONTROLS = "operational_controls"
@@ -26,7 +33,7 @@ class EvalType(str, enum.Enum):
     AGENTIC_SAFETY = "agentic_safety"
 
 
-class EvalStatus(str, enum.Enum):
+class EvalStatus(enum.StrEnum):
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -53,12 +60,8 @@ class EvaluationRun(Base, TimestampMixin, AuditMixin):
     )
 
     # Linked entities
-    use_case_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("genai_use_cases.id")
-    )
-    model_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("models.id")
-    )
+    use_case_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("genai_use_cases.id"))
+    model_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("models.id"))
     dataset_id: Mapped[str | None] = mapped_column(String(36))
 
     # Execution details
@@ -92,9 +95,9 @@ class EvaluationRun(Base, TimestampMixin, AuditMixin):
     artifact_ids: Mapped[list | None] = mapped_column(JSONB, default=list)
 
     # Relationships
-    use_case: Mapped["GenAIUseCase | None"] = relationship(back_populates="evaluation_runs")
-    model: Mapped["Model | None"] = relationship(back_populates="evaluation_runs")
-    results: Mapped[list["EvaluationResult"]] = relationship(
+    use_case: Mapped[GenAIUseCase | None] = relationship(back_populates="evaluation_runs")
+    model: Mapped[Model | None] = relationship(back_populates="evaluation_runs")
+    results: Mapped[list[EvaluationResult]] = relationship(
         back_populates="run", lazy="selectin", cascade="all, delete-orphan"
     )
 
@@ -144,11 +147,7 @@ class EvaluationResult(Base, TimestampMixin):
     metadata_extra: Mapped[dict | None] = mapped_column(JSONB, default=dict)
 
     # Relationships
-    run: Mapped["EvaluationRun"] = relationship(back_populates="results")
+    run: Mapped[EvaluationRun] = relationship(back_populates="results")
 
     def __repr__(self) -> str:
         return f"<EvaluationResult id={self.id} passed={self.passed}>"
-
-
-from app.models.genai_use_case import GenAIUseCase  # noqa: E402
-from app.models.model import Model  # noqa: E402

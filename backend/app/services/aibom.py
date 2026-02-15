@@ -13,7 +13,7 @@ Aligned with:
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -45,7 +45,7 @@ def generate_aibom(
     Returns:
         A dictionary representing the AIBOM document.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     aibom: dict[str, Any] = {
         "bomFormat": "CycloneDX",
@@ -119,46 +119,55 @@ def generate_aibom(
     # Add dependencies (libraries, frameworks)
     if dependencies:
         for dep in dependencies:
-            aibom["components"].append({
-                "type": "library",
-                "bom-ref": f"dep-{dep.get('name', 'unknown')}",
-                "name": dep.get("name", "unknown"),
-                "version": dep.get("version", "unknown"),
-            })
-            aibom["dependencies"].append({
-                "ref": f"model-{model_name}-{model_version}",
-                "dependsOn": [f"dep-{dep.get('name', 'unknown')}"],
-            })
+            aibom["components"].append(
+                {
+                    "type": "library",
+                    "bom-ref": f"dep-{dep.get('name', 'unknown')}",
+                    "name": dep.get("name", "unknown"),
+                    "version": dep.get("version", "unknown"),
+                }
+            )
+            aibom["dependencies"].append(
+                {
+                    "ref": f"model-{model_name}-{model_version}",
+                    "dependsOn": [f"dep-{dep.get('name', 'unknown')}"],
+                }
+            )
 
     # Add training datasets
     if datasets:
         for ds in datasets:
-            aibom["components"].append({
-                "type": "data",
-                "bom-ref": f"data-{ds.get('name', 'unknown')}",
-                "name": ds.get("name", "unknown"),
-                "description": ds.get("description", ""),
-                "properties": [
-                    {"name": "ai:data:type", "value": ds.get("type", "unknown")},
-                    {"name": "ai:data:contains_pii", "value": str(ds.get("contains_pii", False))},
-                ],
-            })
+            aibom["components"].append(
+                {
+                    "type": "data",
+                    "bom-ref": f"data-{ds.get('name', 'unknown')}",
+                    "name": ds.get("name", "unknown"),
+                    "description": ds.get("description", ""),
+                    "properties": [
+                        {"name": "ai:data:type", "value": ds.get("type", "unknown")},
+                        {
+                            "name": "ai:data:contains_pii",
+                            "value": str(ds.get("contains_pii", False)),
+                        },
+                    ],
+                }
+            )
 
     # Add frameworks
     if frameworks:
         for fw in frameworks:
-            aibom["components"].append({
-                "type": "framework",
-                "bom-ref": f"fw-{fw.get('name', 'unknown')}",
-                "name": fw.get("name", "unknown"),
-                "version": fw.get("version", "unknown"),
-            })
+            aibom["components"].append(
+                {
+                    "type": "framework",
+                    "bom-ref": f"fw-{fw.get('name', 'unknown')}",
+                    "name": fw.get("name", "unknown"),
+                    "version": fw.get("version", "unknown"),
+                }
+            )
 
     # Add licenses
     if licenses:
-        aibom["components"][0]["licenses"] = [
-            {"license": {"id": lic}} for lic in licenses
-        ]
+        aibom["components"][0]["licenses"] = [{"license": {"id": lic}} for lic in licenses]
 
     # Add additional metadata
     if additional_metadata:
@@ -178,6 +187,7 @@ def generate_aibom(
 def _generate_bom_serial() -> str:
     """Generate a unique BOM serial number."""
     import uuid
+
     return str(uuid.uuid4())
 
 

@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import CurrentUser, get_current_user, require_write
+from app.auth import CurrentUser, require_write
 from app.database import get_db
 from app.models.genai_use_case import (
     DataClassification,
@@ -29,6 +30,9 @@ from app.schemas.genai_use_case import (
 from app.services.audit_events import emit_use_case_intake
 from app.services.risk_rating import compute_risk_rating
 
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
 router = APIRouter()
 
 
@@ -45,8 +49,12 @@ async def list_use_cases(
 ):
     """List all GenAI use cases with filtering."""
     query = select(GenAIUseCase).where(GenAIUseCase.is_deleted == False)  # noqa: E712
-    count_query = select(func.count()).select_from(GenAIUseCase).where(
-        GenAIUseCase.is_deleted == False  # noqa: E712
+    count_query = (
+        select(func.count())
+        .select_from(GenAIUseCase)
+        .where(
+            GenAIUseCase.is_deleted == False  # noqa: E712
+        )
     )
 
     if search:
@@ -63,9 +71,7 @@ async def list_use_cases(
         count_query = count_query.where(GenAIUseCase.risk_rating == risk_rating)
     if data_classification:
         query = query.where(GenAIUseCase.data_classification == data_classification)
-        count_query = count_query.where(
-            GenAIUseCase.data_classification == data_classification
-        )
+        count_query = count_query.where(GenAIUseCase.data_classification == data_classification)
 
     total = (await db.execute(count_query)).scalar_one()
     offset = (page - 1) * page_size

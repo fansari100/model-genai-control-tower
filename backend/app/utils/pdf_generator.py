@@ -7,7 +7,7 @@ Uses ReportLab to produce audit-grade PDF documents.
 from __future__ import annotations
 
 import io
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from reportlab.lib import colors
@@ -15,12 +15,12 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import (
+    PageBreak,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
-    PageBreak,
 )
 
 
@@ -87,12 +87,10 @@ def generate_certification_pack_pdf(
 
     use_case_name = pack_data.get("use_case_name", "Unknown Use Case")
     elements.append(Paragraph(f"<b>Use Case:</b> {use_case_name}", body_style))
-    elements.append(
-        Paragraph(f"<b>Pack ID:</b> {pack_data.get('pack_id', 'N/A')}", body_style)
-    )
+    elements.append(Paragraph(f"<b>Pack ID:</b> {pack_data.get('pack_id', 'N/A')}", body_style))
     elements.append(
         Paragraph(
-            f"<b>Generated:</b> {pack_data.get('generated_at', datetime.now(timezone.utc).isoformat())}",
+            f"<b>Generated:</b> {pack_data.get('generated_at', datetime.now(UTC).isoformat())}",
             body_style,
         )
     )
@@ -114,9 +112,7 @@ def generate_certification_pack_pdf(
     elements.append(Paragraph("Table of Contents", heading_style))
     sections = pack_data.get("sections", [])
     for i, section in enumerate(sections, 1):
-        elements.append(
-            Paragraph(f"{i}. {section.get('title', 'Section')}", body_style)
-        )
+        elements.append(Paragraph(f"{i}. {section.get('title', 'Section')}", body_style))
     elements.append(PageBreak())
 
     # ── Sections ──────────────────────────────────────────────
@@ -154,9 +150,7 @@ def generate_certification_pack_pdf(
     elements.append(Paragraph("Certification Summary", heading_style))
     summary = pack_data.get("summary", {})
     for key, value in summary.items():
-        elements.append(
-            Paragraph(f"<b>{_humanize(key)}:</b> {_format_value(value)}", body_style)
-        )
+        elements.append(Paragraph(f"<b>{_humanize(key)}:</b> {_format_value(value)}", body_style))
 
     elements.append(Spacer(1, inch))
     elements.append(

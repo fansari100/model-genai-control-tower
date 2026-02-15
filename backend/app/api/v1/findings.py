@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.finding import Finding, FindingSeverity, FindingSource, FindingStatus
 from app.schemas.common import PaginatedResponse
 from app.schemas.finding import FindingCreate, FindingResponse, FindingUpdate
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 

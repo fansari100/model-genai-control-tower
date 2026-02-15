@@ -15,8 +15,6 @@ from typing import Any
 
 import structlog
 
-from app.config import get_settings
-
 logger = structlog.get_logger()
 
 # ── Default flag values ──────────────────────────────────────────────────────
@@ -54,9 +52,10 @@ class FeatureFlagService:
         if self._ld_client is not None:
             return self._ld_client
         try:
+            import os
+
             import ldclient
             from ldclient.config import Config
-            import os
 
             sdk_key = os.environ.get("LAUNCHDARKLY_SDK_KEY", "")
             if sdk_key:
@@ -88,6 +87,7 @@ class FeatureFlagService:
         if ld:
             try:
                 from ldclient import Context
+
                 context = Context.builder(user_id).kind("user").build()
                 value = ld.variation(flag_key, context, default or _DEFAULTS.get(flag_key))
                 logger.debug("feature_flag_ld", flag=flag_key, value=value, user=user_id)
@@ -97,6 +97,7 @@ class FeatureFlagService:
 
         # Check environment variables
         import os
+
         env_key = f"FF_{flag_key.upper()}"
         env_val = os.environ.get(env_key)
         if env_val is not None:

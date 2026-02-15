@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 import enum
-from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Integer, String, Text, Enum as SAEnum
+from sqlalchemy import DateTime, Integer, String, Text
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-from app.models.base import TimestampMixin, AuditMixin, generate_uuid
+from app.models.base import AuditMixin, TimestampMixin, generate_uuid
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
-class ArtifactType(str, enum.Enum):
+class ArtifactType(enum.StrEnum):
     TEST_PLAN = "test_plan"
     TEST_RESULTS = "test_results"
     FINDINGS_REGISTER = "findings_register"
@@ -33,7 +37,7 @@ class ArtifactType(str, enum.Enum):
     OTHER = "other"
 
 
-class RetentionTag(str, enum.Enum):
+class RetentionTag(enum.StrEnum):
     STANDARD = "standard"  # 3 years
     REGULATORY = "regulatory"  # 7 years
     PERMANENT = "permanent"  # indefinite

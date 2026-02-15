@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from app.models.genai_use_case import DataClassification, RiskRating, UseCaseCategory
 
-
 # ── Risk Factor Weights ──────────────────────────────────────────────────────
 
 DATA_CLASS_WEIGHTS: dict[DataClassification, int] = {
@@ -171,11 +170,13 @@ def _identify_owasp_agentic_risks(
     ]
 
     if uses_tools:
-        risks.extend([
-            "ASI02_Tool_Misuse",
-            "ASI03_Identity_Privilege_Abuse",
-            "ASI05_Unexpected_RCE",
-        ])
+        risks.extend(
+            [
+                "ASI02_Tool_Misuse",
+                "ASI03_Identity_Privilege_Abuse",
+                "ASI05_Unexpected_RCE",
+            ]
+        )
     if uses_memory:
         risks.append("ASI06_Memory_Context_Poisoning")
 
@@ -254,7 +255,13 @@ def compute_risk_rating(
     dc_weight = DATA_CLASS_WEIGHTS.get(data_classification, 0)
     total_score += dc_weight
     if dc_weight > 0:
-        factors.append({"factor": "data_classification", "value": data_classification.value, "weight": dc_weight})
+        factors.append(
+            {
+                "factor": "data_classification",
+                "value": data_classification.value,
+                "weight": dc_weight,
+            }
+        )
 
     # ── Score: category ──────────────────────────────────────
     cat_weight = CATEGORY_WEIGHTS.get(category, 10)
@@ -285,7 +292,9 @@ def compute_risk_rating(
             break
 
     # ── Identify applicable risks ────────────────────────────
-    owasp_llm = _identify_owasp_llm_risks(uses_rag, uses_agents, uses_tools, handles_pii, client_facing)
+    owasp_llm = _identify_owasp_llm_risks(
+        uses_rag, uses_agents, uses_tools, handles_pii, client_facing
+    )
     owasp_agentic = _identify_owasp_agentic_risks(uses_agents, uses_tools, uses_memory)
     nist = _identify_nist_considerations(uses_rag, client_facing, uses_agents)
 

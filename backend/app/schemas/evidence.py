@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict
 
 from app.models.evidence import ArtifactType, RetentionTag
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 class EvidenceCreate(BaseModel):

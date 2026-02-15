@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import (
@@ -14,6 +14,9 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import DeclarativeBase
 
 from app.config import get_settings
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 # ── Naming conventions for Alembic auto-generation ───────────
 NAMING_CONVENTION: dict[str, str] = {
@@ -53,7 +56,7 @@ async_session_factory = async_sessionmaker(
 )
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_db() -> AsyncGenerator[AsyncSession]:
     """FastAPI dependency – yields an async session."""
     async with async_session_factory() as session:
         try:

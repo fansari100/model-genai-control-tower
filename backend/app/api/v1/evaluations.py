@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import CurrentUser, get_current_user, require_write
+from app.auth import CurrentUser, require_write
 from app.database import get_db
 from app.models.evaluation import EvalStatus, EvalType, EvaluationResult, EvaluationRun
 from app.schemas.common import PaginatedResponse
@@ -19,6 +19,9 @@ from app.schemas.evaluation import (
     EvalRunResponse,
     TriggerEvalRequest,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -68,7 +71,7 @@ async def create_evaluation(payload: EvalRunCreate, db: AsyncSession = Depends(g
     run = EvaluationRun(
         **payload.model_dump(),
         status=EvalStatus.PENDING,
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
     )
     db.add(run)
     await db.flush()
@@ -111,14 +114,14 @@ async def trigger_evaluation(
     settings = get_settings()
 
     run = EvaluationRun(
-        name=f"{payload.eval_type.value}_run_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}",
+        name=f"{payload.eval_type.value}_run_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}",
         eval_type=payload.eval_type,
         use_case_id=payload.use_case_id,
         model_id=payload.model_id,
         dataset_id=payload.dataset_id,
         eval_config=payload.config_overrides or {},
         status=EvalStatus.PENDING,
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
         created_by=user.username,
         updated_by=user.username,
     )
@@ -131,7 +134,9 @@ async def trigger_evaluation(
         try:
             from temporalio.client import Client
 
-            client = await Client.connect(settings.temporal_host, namespace=settings.temporal_namespace)
+            client = await Client.connect(
+                settings.temporal_host, namespace=settings.temporal_namespace
+            )
             await client.start_workflow(
                 "certification-workflow",
                 arg={
@@ -150,6 +155,7 @@ async def trigger_evaluation(
             await db.refresh(run)
         except Exception as e:
             import structlog
+
             structlog.get_logger().warning("temporal_dispatch_failed", error=str(e), run_id=run.id)
 
     return EvalRunResponse.model_validate(run)

@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import enum
 
-from sqlalchemy import Boolean, Integer, String, Text, Enum as SAEnum
+from sqlalchemy import Boolean, Integer, String, Text
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-from app.models.base import TimestampMixin, SoftDeleteMixin, AuditMixin, generate_uuid
+from app.models.base import AuditMixin, SoftDeleteMixin, TimestampMixin, generate_uuid
 
 
-class DatasetType(str, enum.Enum):
+class DatasetType(enum.StrEnum):
     GOLDEN_TEST_SET = "golden_test_set"
     RETRIEVAL_CORPUS = "retrieval_corpus"
     TRAINING_DATA = "training_data"

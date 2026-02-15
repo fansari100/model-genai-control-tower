@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.evaluation import EvaluationRun, EvalStatus
+from app.models.evaluation import EvalStatus, EvaluationRun
 from app.models.finding import Finding, FindingSeverity, FindingStatus
-from app.models.genai_use_case import GenAIUseCase, UseCaseStatus, RiskRating
-from app.models.model import Model, ModelStatus
+from app.models.genai_use_case import GenAIUseCase
+from app.models.model import Model
 from app.models.tool import Tool, ToolStatus
 from app.services.compliance_mapping import get_full_compliance_matrix
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -24,72 +28,93 @@ async def get_dashboard_summary(db: AsyncSession = Depends(get_db)):
     Provides counts, status breakdowns, and risk distribution.
     """
     # Models
-    model_total = (await db.execute(
-        select(func.count()).select_from(Model).where(Model.is_deleted == False)  # noqa: E712
-    )).scalar_one()
+    model_total = (
+        await db.execute(
+            select(func.count()).select_from(Model).where(Model.is_deleted == False)  # noqa: E712
+        )
+    ).scalar_one()
     model_by_status = dict(
-        (await db.execute(
-            select(Model.status, func.count())
-            .where(Model.is_deleted == False)  # noqa: E712
-            .group_by(Model.status)
-        )).all()
+        (
+            await db.execute(
+                select(Model.status, func.count())
+                .where(Model.is_deleted == False)  # noqa: E712
+                .group_by(Model.status)
+            )
+        ).all()
     )
 
     # Tools / EUCs
-    tool_total = (await db.execute(
-        select(func.count()).select_from(Tool).where(Tool.is_deleted == False)  # noqa: E712
-    )).scalar_one()
+    tool_total = (
+        await db.execute(
+            select(func.count()).select_from(Tool).where(Tool.is_deleted == False)  # noqa: E712
+        )
+    ).scalar_one()
     tool_by_status = dict(
-        (await db.execute(
-            select(Tool.status, func.count())
-            .where(Tool.is_deleted == False)  # noqa: E712
-            .group_by(Tool.status)
-        )).all()
+        (
+            await db.execute(
+                select(Tool.status, func.count())
+                .where(Tool.is_deleted == False)  # noqa: E712
+                .group_by(Tool.status)
+            )
+        ).all()
     )
 
     # GenAI Use Cases
-    uc_total = (await db.execute(
-        select(func.count()).select_from(GenAIUseCase)
-        .where(GenAIUseCase.is_deleted == False)  # noqa: E712
-    )).scalar_one()
+    uc_total = (
+        await db.execute(
+            select(func.count()).select_from(GenAIUseCase).where(GenAIUseCase.is_deleted == False)  # noqa: E712
+        )
+    ).scalar_one()
     uc_by_status = dict(
-        (await db.execute(
-            select(GenAIUseCase.status, func.count())
-            .where(GenAIUseCase.is_deleted == False)  # noqa: E712
-            .group_by(GenAIUseCase.status)
-        )).all()
+        (
+            await db.execute(
+                select(GenAIUseCase.status, func.count())
+                .where(GenAIUseCase.is_deleted == False)  # noqa: E712
+                .group_by(GenAIUseCase.status)
+            )
+        ).all()
     )
     uc_by_risk = dict(
-        (await db.execute(
-            select(GenAIUseCase.risk_rating, func.count())
-            .where(GenAIUseCase.is_deleted == False)  # noqa: E712
-            .group_by(GenAIUseCase.risk_rating)
-        )).all()
+        (
+            await db.execute(
+                select(GenAIUseCase.risk_rating, func.count())
+                .where(GenAIUseCase.is_deleted == False)  # noqa: E712
+                .group_by(GenAIUseCase.risk_rating)
+            )
+        ).all()
     )
 
     # Findings
-    findings_total = (await db.execute(
-        select(func.count()).select_from(Finding)
-    )).scalar_one()
-    findings_open_critical = (await db.execute(
-        select(func.count()).select_from(Finding)
-        .where(Finding.status.in_([FindingStatus.OPEN, FindingStatus.IN_PROGRESS]))
-        .where(Finding.severity.in_([FindingSeverity.CRITICAL, FindingSeverity.HIGH]))
-    )).scalar_one()
+    findings_total = (await db.execute(select(func.count()).select_from(Finding))).scalar_one()
+    findings_open_critical = (
+        await db.execute(
+            select(func.count())
+            .select_from(Finding)
+            .where(Finding.status.in_([FindingStatus.OPEN, FindingStatus.IN_PROGRESS]))
+            .where(Finding.severity.in_([FindingSeverity.CRITICAL, FindingSeverity.HIGH]))
+        )
+    ).scalar_one()
 
     # Evaluations
-    eval_total = (await db.execute(
-        select(func.count()).select_from(EvaluationRun)
-    )).scalar_one()
-    eval_recent_pass_rate = (await db.execute(
-        select(func.avg(EvaluationRun.pass_rate))
-        .where(EvaluationRun.status == EvalStatus.COMPLETED)
-    )).scalar_one()
+    eval_total = (await db.execute(select(func.count()).select_from(EvaluationRun))).scalar_one()
+    eval_recent_pass_rate = (
+        await db.execute(
+            select(func.avg(EvaluationRun.pass_rate)).where(
+                EvaluationRun.status == EvalStatus.COMPLETED
+            )
+        )
+    ).scalar_one()
 
     return {
         "inventory": {
-            "models": {"total": model_total, "by_status": {str(k): v for k, v in model_by_status.items()}},
-            "tools": {"total": tool_total, "by_status": {str(k): v for k, v in tool_by_status.items()}},
+            "models": {
+                "total": model_total,
+                "by_status": {str(k): v for k, v in model_by_status.items()},
+            },
+            "tools": {
+                "total": tool_total,
+                "by_status": {str(k): v for k, v in tool_by_status.items()},
+            },
             "use_cases": {
                 "total": uc_total,
                 "by_status": {str(k): v for k, v in uc_by_status.items()},
@@ -99,11 +124,20 @@ async def get_dashboard_summary(db: AsyncSession = Depends(get_db)):
         "risk_posture": {
             "open_critical_findings": findings_open_critical,
             "total_findings": findings_total,
-            "avg_eval_pass_rate": round(eval_recent_pass_rate, 2) if eval_recent_pass_rate else None,
+            "avg_eval_pass_rate": round(eval_recent_pass_rate, 2)
+            if eval_recent_pass_rate
+            else None,
             "total_evaluations": eval_total,
         },
         "compliance": {
-            "frameworks": ["SR 11-7", "NIST AI 600-1", "OWASP LLM Top 10 2025", "OWASP Agentic Top 10 2026", "ISO/IEC 42001", "MITRE ATLAS"],
+            "frameworks": [
+                "SR 11-7",
+                "NIST AI 600-1",
+                "OWASP LLM Top 10 2025",
+                "OWASP Agentic Top 10 2026",
+                "ISO/IEC 42001",
+                "MITRE ATLAS",
+            ],
             "status": "active",
         },
     }
@@ -117,27 +151,34 @@ async def get_committee_report(db: AsyncSession = Depends(get_db)):
     """
     # Use case pipeline funnel
     pipeline = dict(
-        (await db.execute(
-            select(GenAIUseCase.status, func.count())
-            .where(GenAIUseCase.is_deleted == False)  # noqa: E712
-            .group_by(GenAIUseCase.status)
-        )).all()
+        (
+            await db.execute(
+                select(GenAIUseCase.status, func.count())
+                .where(GenAIUseCase.is_deleted == False)  # noqa: E712
+                .group_by(GenAIUseCase.status)
+            )
+        ).all()
     )
 
     # Tools requiring attestation
-    tools_needing_attestation = (await db.execute(
-        select(func.count()).select_from(Tool)
-        .where(Tool.is_deleted == False)  # noqa: E712
-        .where(Tool.status.in_([ToolStatus.ATTESTATION_DUE, ToolStatus.ATTESTATION_OVERDUE]))
-    )).scalar_one()
+    tools_needing_attestation = (
+        await db.execute(
+            select(func.count())
+            .select_from(Tool)
+            .where(Tool.is_deleted == False)  # noqa: E712
+            .where(Tool.status.in_([ToolStatus.ATTESTATION_DUE, ToolStatus.ATTESTATION_OVERDUE]))
+        )
+    ).scalar_one()
 
     # Findings aging
     findings_by_severity = dict(
-        (await db.execute(
-            select(Finding.severity, func.count())
-            .where(Finding.status.in_([FindingStatus.OPEN, FindingStatus.IN_PROGRESS]))
-            .group_by(Finding.severity)
-        )).all()
+        (
+            await db.execute(
+                select(Finding.severity, func.count())
+                .where(Finding.status.in_([FindingStatus.OPEN, FindingStatus.IN_PROGRESS]))
+                .group_by(Finding.severity)
+            )
+        ).all()
     )
 
     return {

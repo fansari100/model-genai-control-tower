@@ -2,13 +2,13 @@
 
 from app.models.approval import Approval
 from app.models.dataset import Dataset
-from app.models.evaluation import EvaluationRun, EvaluationResult
+from app.models.evaluation import EvaluationResult, EvaluationRun
 from app.models.evidence import EvidenceArtifact
 from app.models.finding import Finding
 from app.models.genai_use_case import GenAIUseCase, UseCaseModelLink, UseCaseToolLink
 from app.models.issue import Issue
 from app.models.model import Model
-from app.models.monitoring import MonitoringPlan, MonitoringExecution
+from app.models.monitoring import MonitoringExecution, MonitoringPlan
 from app.models.tool import Tool
 from app.models.vendor import Vendor
 

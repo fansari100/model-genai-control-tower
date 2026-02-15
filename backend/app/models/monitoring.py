@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 import enum
-from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, Enum as SAEnum
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.base import TimestampMixin, AuditMixin, generate_uuid
+from app.models.base import AuditMixin, TimestampMixin, generate_uuid
+
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from app.models.genai_use_case import GenAIUseCase
 
 
-class MonitoringCadence(str, enum.Enum):
+class MonitoringCadence(enum.StrEnum):
     REAL_TIME = "real_time"
     HOURLY = "hourly"
     DAILY = "daily"
@@ -22,13 +28,13 @@ class MonitoringCadence(str, enum.Enum):
     QUARTERLY = "quarterly"
 
 
-class MonitoringStatus(str, enum.Enum):
+class MonitoringStatus(enum.StrEnum):
     ACTIVE = "active"
     PAUSED = "paused"
     DISABLED = "disabled"
 
 
-class AlertSeverity(str, enum.Enum):
+class AlertSeverity(enum.StrEnum):
     CRITICAL = "critical"
     WARNING = "warning"
     INFO = "info"
@@ -77,8 +83,8 @@ class MonitoringPlan(Base, TimestampMixin, AuditMixin):
     metadata_extra: Mapped[dict | None] = mapped_column(JSONB, default=dict)
 
     # Relationships
-    use_case: Mapped["GenAIUseCase"] = relationship(back_populates="monitoring_plans")
-    executions: Mapped[list["MonitoringExecution"]] = relationship(
+    use_case: Mapped[GenAIUseCase] = relationship(back_populates="monitoring_plans")
+    executions: Mapped[list[MonitoringExecution]] = relationship(
         back_populates="plan", lazy="selectin"
     )
 
@@ -117,10 +123,7 @@ class MonitoringExecution(Base, TimestampMixin):
     metadata_extra: Mapped[dict | None] = mapped_column(JSONB, default=dict)
 
     # Relationships
-    plan: Mapped["MonitoringPlan"] = relationship(back_populates="executions")
+    plan: Mapped[MonitoringPlan] = relationship(back_populates="executions")
 
     def __repr__(self) -> str:
         return f"<MonitoringExecution id={self.id} drift={self.drift_detected}>"
-
-
-from app.models.genai_use_case import GenAIUseCase  # noqa: E402

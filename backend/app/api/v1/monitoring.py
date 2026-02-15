@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import CurrentUser, get_current_user
 from app.database import get_db
@@ -18,8 +18,11 @@ from app.models.monitoring import (
     MonitoringStatus,
 )
 from app.schemas.common import PaginatedResponse
-from app.services.audit_events import audit_publisher, AuditEvent, AuditEventType
+from app.services.audit_events import AuditEvent, AuditEventType, audit_publisher
 from app.workers.monitoring_worker import MonitoringWorker
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 _monitoring_worker = MonitoringWorker()
@@ -111,7 +114,9 @@ async def create_monitoring_plan(
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
-    plan = MonitoringPlan(**payload.model_dump(), created_by=user.username, updated_by=user.username)
+    plan = MonitoringPlan(
+        **payload.model_dump(), created_by=user.username, updated_by=user.username
+    )
     db.add(plan)
     await db.flush()
     await db.refresh(plan)
@@ -173,7 +178,7 @@ async def trigger_monitoring_execution(
     # Persist execution result
     execution = MonitoringExecution(
         plan_id=plan_id,
-        executed_at=datetime.now(timezone.utc),
+        executed_at=datetime.now(UTC),
         duration_seconds=worker_result.get("duration_seconds"),
         metrics=worker_result.get("metrics", {}),
         thresholds_breached=worker_result.get("thresholds_breached", []),
@@ -189,20 +194,24 @@ async def trigger_monitoring_execution(
 
     # Emit audit events for drift/recert
     if execution.drift_detected:
-        await audit_publisher.publish(AuditEvent(
-            event_type=AuditEventType.MONITORING_DRIFT_DETECTED,
-            entity_type="monitoring_plan",
-            entity_id=plan_id,
-            actor=user.username,
-            data={"thresholds_breached": execution.thresholds_breached},
-        ))
+        await audit_publisher.publish(
+            AuditEvent(
+                event_type=AuditEventType.MONITORING_DRIFT_DETECTED,
+                entity_type="monitoring_plan",
+                entity_id=plan_id,
+                actor=user.username,
+                data={"thresholds_breached": execution.thresholds_breached},
+            )
+        )
     if execution.recertification_triggered:
-        await audit_publisher.publish(AuditEvent(
-            event_type=AuditEventType.MONITORING_RECERT_TRIGGERED,
-            entity_type="monitoring_plan",
-            entity_id=plan_id,
-            actor=user.username,
-            data={"trigger_reason": "drift_detected"},
-        ))
+        await audit_publisher.publish(
+            AuditEvent(
+                event_type=AuditEventType.MONITORING_RECERT_TRIGGERED,
+                entity_type="monitoring_plan",
+                entity_id=plan_id,
+                actor=user.username,
+                data={"trigger_reason": "drift_detected"},
+            )
+        )
 
     return MonitoringExecResponse.model_validate(execution)

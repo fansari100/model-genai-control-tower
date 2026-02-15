@@ -14,7 +14,6 @@ from __future__ import annotations
 import json
 import subprocess
 import tempfile
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -52,9 +51,13 @@ class EvalWorker:
             output_path = tempfile.mktemp(suffix=".json")
 
         cmd = [
-            "npx", "promptfoo@latest", "eval",
-            "--config", config_path,
-            "--output", output_path,
+            "npx",
+            "promptfoo@latest",
+            "eval",
+            "--config",
+            config_path,
+            "--output",
+            output_path,
             "--no-cache",
         ]
 
@@ -99,10 +102,14 @@ class EvalWorker:
 
         cmd = [
             "garak",
-            "--model_type", model_type,
-            "--model_name", model_name,
-            "--probes", probes,
-            "--report_prefix", report_prefix,
+            "--model_type",
+            model_type,
+            "--model_name",
+            model_name,
+            "--probes",
+            probes,
+            "--report_prefix",
+            report_prefix,
         ]
 
         try:
@@ -140,45 +147,55 @@ class EvalWorker:
         checks: list[dict] = []
 
         # Check 1: Prompt/output logging
-        checks.append({
-            "control": "prompt_output_logging",
-            "description": "Prompt and output logging is captured (FINRA requirement)",
-            "status": "pass" if use_case_config.get("logging_enabled") else "fail",
-        })
+        checks.append(
+            {
+                "control": "prompt_output_logging",
+                "description": "Prompt and output logging is captured (FINRA requirement)",
+                "status": "pass" if use_case_config.get("logging_enabled") else "fail",
+            }
+        )
 
         # Check 2: Model version tracking
-        checks.append({
-            "control": "model_version_tracking",
-            "description": "Model version is recorded in every request (FINRA requirement)",
-            "status": "pass" if use_case_config.get("version_tracking") else "fail",
-        })
+        checks.append(
+            {
+                "control": "model_version_tracking",
+                "description": "Model version is recorded in every request (FINRA requirement)",
+                "status": "pass" if use_case_config.get("version_tracking") else "fail",
+            }
+        )
 
         # Check 3: Human-in-loop
         requires_hitl = use_case_config.get("requires_human_in_loop", False)
         hitl_active = use_case_config.get("hitl_active", False)
-        checks.append({
-            "control": "human_in_loop",
-            "description": "Human-in-the-loop is enforced where required",
-            "status": "pass" if (not requires_hitl or hitl_active) else "fail",
-        })
+        checks.append(
+            {
+                "control": "human_in_loop",
+                "description": "Human-in-the-loop is enforced where required",
+                "status": "pass" if (not requires_hitl or hitl_active) else "fail",
+            }
+        )
 
         # Check 4: PII redaction
         handles_pii = use_case_config.get("handles_pii", False)
         pii_redaction = use_case_config.get("pii_redaction_active", False)
-        checks.append({
-            "control": "pii_redaction",
-            "description": "PII redaction is active for PII-handling use cases",
-            "status": "pass" if (not handles_pii or pii_redaction) else "fail",
-        })
+        checks.append(
+            {
+                "control": "pii_redaction",
+                "description": "PII redaction is active for PII-handling use cases",
+                "status": "pass" if (not handles_pii or pii_redaction) else "fail",
+            }
+        )
 
         # Check 5: Tool permission controls (Agentic)
         uses_tools = use_case_config.get("uses_tools", False)
         tool_allowlist = use_case_config.get("tool_allowlist_active", False)
-        checks.append({
-            "control": "tool_permission_controls",
-            "description": "Tool allowlists enforced for tool-using systems",
-            "status": "pass" if (not uses_tools or tool_allowlist) else "fail",
-        })
+        checks.append(
+            {
+                "control": "tool_permission_controls",
+                "description": "Tool allowlists enforced for tool-using systems",
+                "status": "pass" if (not uses_tools or tool_allowlist) else "fail",
+            }
+        )
 
         passed = sum(1 for c in checks if c["status"] == "pass")
         total = len(checks)

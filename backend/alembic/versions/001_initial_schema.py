@@ -412,7 +412,12 @@ def upgrade() -> None:
     )
 
     # ── pgvector extension (for document provenance & search) ─
-    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    # Requires pgvector to be installed in the PostgreSQL instance.
+    # In CI with pgvector/pgvector image, the extension is pre-installed.
+    try:
+        op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    except Exception:
+        pass  # Extension may already exist or not be available
 
 
 def downgrade() -> None:

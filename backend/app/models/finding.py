@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 import enum
-from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, Enum as SAEnum
+from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.base import TimestampMixin, AuditMixin, generate_uuid
+from app.models.base import AuditMixin, TimestampMixin, generate_uuid
+
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from app.models.genai_use_case import GenAIUseCase
 
 
-class FindingSeverity(str, enum.Enum):
+class FindingSeverity(enum.StrEnum):
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -21,7 +27,7 @@ class FindingSeverity(str, enum.Enum):
     INFORMATIONAL = "informational"
 
 
-class FindingStatus(str, enum.Enum):
+class FindingStatus(enum.StrEnum):
     OPEN = "open"
     IN_PROGRESS = "in_progress"
     MITIGATED = "mitigated"
@@ -30,7 +36,7 @@ class FindingStatus(str, enum.Enum):
     REOPENED = "reopened"
 
 
-class FindingSource(str, enum.Enum):
+class FindingSource(enum.StrEnum):
     EVALUATION = "evaluation"
     RED_TEAM = "red_team"
     MONITORING = "monitoring"
@@ -61,9 +67,7 @@ class Finding(Base, TimestampMixin, AuditMixin):
     )
 
     # Links
-    use_case_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("genai_use_cases.id")
-    )
+    use_case_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("genai_use_cases.id"))
     evaluation_run_id: Mapped[str | None] = mapped_column(String(36))
     model_id: Mapped[str | None] = mapped_column(String(36))
     tool_id: Mapped[str | None] = mapped_column(String(36))
@@ -86,10 +90,7 @@ class Finding(Base, TimestampMixin, AuditMixin):
     metadata_extra: Mapped[dict | None] = mapped_column(JSONB, default=dict)
 
     # Relationships
-    use_case: Mapped["GenAIUseCase | None"] = relationship(back_populates="findings")
+    use_case: Mapped[GenAIUseCase | None] = relationship(back_populates="findings")
 
     def __repr__(self) -> str:
         return f"<Finding id={self.id} severity={self.severity} status={self.status}>"
-
-
-from app.models.genai_use_case import GenAIUseCase  # noqa: E402

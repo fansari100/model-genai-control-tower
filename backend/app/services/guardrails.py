@@ -12,21 +12,20 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any
+from enum import StrEnum
 
 import structlog
 
 logger = structlog.get_logger()
 
 
-class ThreatLevel(str, Enum):
+class ThreatLevel(StrEnum):
     SAFE = "safe"
     SUSPICIOUS = "suspicious"
     BLOCKED = "blocked"
 
 
-class EscalationAction(str, Enum):
+class EscalationAction(StrEnum):
     PASS = "pass"
     ESCALATE_TO_CLASSIFIER = "escalate_to_classifier"
     ESCALATE_TO_HUMAN = "escalate_to_human"
@@ -71,8 +70,17 @@ PII_PATTERNS = {
 
 # Toxicity keywords (simplified – production uses ML classifier)
 TOXICITY_KEYWORDS = [
-    "kill", "harm", "illegal", "exploit", "hack", "weapon",
-    "fraud", "steal", "extort", "blackmail", "launder",
+    "kill",
+    "harm",
+    "illegal",
+    "exploit",
+    "hack",
+    "weapon",
+    "fraud",
+    "steal",
+    "extort",
+    "blackmail",
+    "launder",
 ]
 
 
@@ -152,12 +160,14 @@ def stage1_toxicity_check(text: str) -> GuardrailResult:
 
 # ── Stage 2: Heavy Classifier (OpenAI Moderation API) ────────────────────────
 
+
 async def stage2_classify(text: str, context: str = "input") -> GuardrailResult:
     """
     Stage 2 heavy classifier – calls OpenAI Moderation API for high-confidence
     content safety classification. Only invoked when Stage 1 escalates.
     """
     import httpx
+
     from app.config import get_settings
 
     settings = get_settings()
@@ -241,12 +251,13 @@ async def stage2_classify(text: str, context: str = "input") -> GuardrailResult:
             threat_level=ThreatLevel.SUSPICIOUS,
             action=EscalationAction.ESCALATE_TO_HUMAN,
             stage="stage2_classifier",
-            reason=f"Moderation API unreachable — escalating to human review",
+            reason="Moderation API unreachable — escalating to human review",
             confidence=0.0,
         )
 
 
 # ── Cascade Orchestrator ─────────────────────────────────────────────────────
+
 
 async def run_cascade_guardrails(
     text: str,

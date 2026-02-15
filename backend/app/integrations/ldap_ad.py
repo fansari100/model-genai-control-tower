@@ -11,7 +11,6 @@ Supplements Keycloak OIDC with direct LDAP queries for:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import structlog
 
@@ -58,6 +57,7 @@ class LDAPAdapter(BaseIntegration):
             return self._conn
         try:
             import ldap3
+
             server = ldap3.Server(self.server_url, use_ssl=self.use_ssl, get_info=ldap3.ALL)
             self._conn = ldap3.Connection(
                 server, user=self.bind_dn, password=self.bind_password, auto_bind=True
@@ -77,7 +77,9 @@ class LDAPAdapter(BaseIntegration):
             return {"status": "connected", "server": self.server_url}
         return {"status": "disconnected"}
 
-    async def lookup_user(self, email: str | None = None, employee_id: str | None = None) -> LDAPUser | None:
+    async def lookup_user(
+        self, email: str | None = None, employee_id: str | None = None
+    ) -> LDAPUser | None:
         """Look up a user by email or employee ID."""
         self._check_circuit()
         conn = self._get_connection()
@@ -86,14 +88,23 @@ class LDAPAdapter(BaseIntegration):
 
         try:
             import ldap3
+
             search_filter = f"(mail={email})" if email else f"(employeeID={employee_id})"
             conn.search(
                 search_base=self.base_dn,
                 search_filter=search_filter,
                 search_scope=ldap3.SUBTREE,
                 attributes=[
-                    "dn", "employeeID", "sAMAccountName", "mail", "displayName",
-                    "department", "company", "manager", "memberOf", "title",
+                    "dn",
+                    "employeeID",
+                    "sAMAccountName",
+                    "mail",
+                    "displayName",
+                    "department",
+                    "company",
+                    "manager",
+                    "memberOf",
+                    "title",
                 ],
             )
             if not conn.entries:
@@ -127,6 +138,7 @@ class LDAPAdapter(BaseIntegration):
             return []
         try:
             import ldap3
+
             conn.search(
                 search_base=group_dn,
                 search_filter="(objectClass=group)",
@@ -149,7 +161,7 @@ class LDAPAdapter(BaseIntegration):
             if user is None or user.manager_dn is None:
                 break
             # Look up manager
-            manager = await self.lookup_user(employee_id=None, email=None)
+            await self.lookup_user(employee_id=None, email=None)
             # In real impl: resolve manager_dn to user object
             break  # Simplified for safety
         return chain
