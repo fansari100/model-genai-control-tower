@@ -36,7 +36,7 @@ class Vendor(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
 
     # Security & compliance posture
     security_posture: Mapped[VendorSecurityPosture] = mapped_column(
-        SAEnum(VendorSecurityPosture, name="vendor_security_posture"),
+        SAEnum(VendorSecurityPosture, name="vendor_security_posture", native_enum=False),
         default=VendorSecurityPosture.UNDER_REVIEW,
     )
     sla_summary: Mapped[str | None] = mapped_column(Text)

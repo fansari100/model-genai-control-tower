@@ -53,7 +53,7 @@ class EvidenceArtifact(Base, TimestampMixin, AuditMixin):
     description: Mapped[str | None] = mapped_column(Text)
 
     artifact_type: Mapped[ArtifactType] = mapped_column(
-        SAEnum(ArtifactType, name="artifact_type"),
+        SAEnum(ArtifactType, name="artifact_type", native_enum=False),
         nullable=False,
     )
 
@@ -70,7 +70,7 @@ class EvidenceArtifact(Base, TimestampMixin, AuditMixin):
 
     # WORM compliance
     retention_tag: Mapped[RetentionTag] = mapped_column(
-        SAEnum(RetentionTag, name="retention_tag"),
+        SAEnum(RetentionTag, name="retention_tag", native_enum=False),
         default=RetentionTag.STANDARD,
     )
     retention_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

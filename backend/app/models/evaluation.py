@@ -51,11 +51,11 @@ class EvaluationRun(Base, TimestampMixin, AuditMixin):
     description: Mapped[str | None] = mapped_column(Text)
 
     eval_type: Mapped[EvalType] = mapped_column(
-        SAEnum(EvalType, name="eval_type"),
+        SAEnum(EvalType, name="eval_type", native_enum=False),
         nullable=False,
     )
     status: Mapped[EvalStatus] = mapped_column(
-        SAEnum(EvalStatus, name="eval_status"),
+        SAEnum(EvalStatus, name="eval_status", native_enum=False),
         default=EvalStatus.PENDING,
     )
 

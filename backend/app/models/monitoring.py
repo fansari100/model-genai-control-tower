@@ -55,11 +55,11 @@ class MonitoringPlan(Base, TimestampMixin, AuditMixin):
     )
 
     status: Mapped[MonitoringStatus] = mapped_column(
-        SAEnum(MonitoringStatus, name="monitoring_status"),
+        SAEnum(MonitoringStatus, name="monitoring_status", native_enum=False),
         default=MonitoringStatus.ACTIVE,
     )
     cadence: Mapped[MonitoringCadence] = mapped_column(
-        SAEnum(MonitoringCadence, name="monitoring_cadence"),
+        SAEnum(MonitoringCadence, name="monitoring_cadence", native_enum=False),
         default=MonitoringCadence.DAILY,
     )
 

@@ -41,11 +41,11 @@ class Approval(Base, TimestampMixin, AuditMixin):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
 
     gate_type: Mapped[ApprovalGateType] = mapped_column(
-        SAEnum(ApprovalGateType, name="approval_gate_type"),
+        SAEnum(ApprovalGateType, name="approval_gate_type", native_enum=False),
         nullable=False,
     )
     decision: Mapped[ApprovalDecision] = mapped_column(
-        SAEnum(ApprovalDecision, name="approval_decision"),
+        SAEnum(ApprovalDecision, name="approval_decision", native_enum=False),
         nullable=False,
     )
 

@@ -62,19 +62,19 @@ class Model(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
     purpose: Mapped[str | None] = mapped_column(Text)
 
     model_type: Mapped[ModelType] = mapped_column(
-        SAEnum(ModelType, name="model_type"),
+        SAEnum(ModelType, name="model_type", native_enum=False),
         nullable=False,
     )
     deployment: Mapped[ModelDeployment] = mapped_column(
-        SAEnum(ModelDeployment, name="model_deployment"),
+        SAEnum(ModelDeployment, name="model_deployment", native_enum=False),
         default=ModelDeployment.VENDOR_API,
     )
     status: Mapped[ModelStatus] = mapped_column(
-        SAEnum(ModelStatus, name="model_status"),
+        SAEnum(ModelStatus, name="model_status", native_enum=False),
         default=ModelStatus.DRAFT,
     )
     risk_tier: Mapped[RiskTier] = mapped_column(
-        SAEnum(RiskTier, name="risk_tier"),
+        SAEnum(RiskTier, name="risk_tier", native_enum=False),
         default=RiskTier.TIER_3_MEDIUM,
     )
 

@@ -63,15 +63,15 @@ class Tool(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
     purpose: Mapped[str | None] = mapped_column(Text)
 
     category: Mapped[ToolCategory] = mapped_column(
-        SAEnum(ToolCategory, name="tool_category"),
+        SAEnum(ToolCategory, name="tool_category", native_enum=False),
         nullable=False,
     )
     criticality: Mapped[ToolCriticality] = mapped_column(
-        SAEnum(ToolCriticality, name="tool_criticality"),
+        SAEnum(ToolCriticality, name="tool_criticality", native_enum=False),
         default=ToolCriticality.MEDIUM,
     )
     status: Mapped[ToolStatus] = mapped_column(
-        SAEnum(ToolStatus, name="tool_status"),
+        SAEnum(ToolStatus, name="tool_status", native_enum=False),
         default=ToolStatus.UNDER_REVIEW,
     )
 

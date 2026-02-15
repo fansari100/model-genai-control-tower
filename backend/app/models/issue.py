@@ -46,15 +46,15 @@ class Issue(Base, TimestampMixin, AuditMixin):
     description: Mapped[str | None] = mapped_column(Text)
 
     source: Mapped[IssueSource] = mapped_column(
-        SAEnum(IssueSource, name="issue_source"),
+        SAEnum(IssueSource, name="issue_source", native_enum=False),
         nullable=False,
     )
     status: Mapped[IssueStatus] = mapped_column(
-        SAEnum(IssueStatus, name="issue_status"),
+        SAEnum(IssueStatus, name="issue_status", native_enum=False),
         default=IssueStatus.OPEN,
     )
     priority: Mapped[IssuePriority] = mapped_column(
-        SAEnum(IssuePriority, name="issue_priority"),
+        SAEnum(IssuePriority, name="issue_priority", native_enum=False),
         default=IssuePriority.P3_MEDIUM,
     )
 

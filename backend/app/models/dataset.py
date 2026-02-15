@@ -31,7 +31,7 @@ class Dataset(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
     description: Mapped[str | None] = mapped_column(Text)
 
     dataset_type: Mapped[DatasetType] = mapped_column(
-        SAEnum(DatasetType, name="dataset_type"),
+        SAEnum(DatasetType, name="dataset_type", native_enum=False),
         nullable=False,
     )
 

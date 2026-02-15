@@ -54,15 +54,15 @@ class Finding(Base, TimestampMixin, AuditMixin):
     description: Mapped[str | None] = mapped_column(Text)
 
     severity: Mapped[FindingSeverity] = mapped_column(
-        SAEnum(FindingSeverity, name="finding_severity"),
+        SAEnum(FindingSeverity, name="finding_severity", native_enum=False),
         nullable=False,
     )
     status: Mapped[FindingStatus] = mapped_column(
-        SAEnum(FindingStatus, name="finding_status"),
+        SAEnum(FindingStatus, name="finding_status", native_enum=False),
         default=FindingStatus.OPEN,
     )
     source: Mapped[FindingSource] = mapped_column(
-        SAEnum(FindingSource, name="finding_source"),
+        SAEnum(FindingSource, name="finding_source", native_enum=False),
         nullable=False,
     )
 

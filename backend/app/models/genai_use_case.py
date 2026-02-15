@@ -79,21 +79,21 @@ class GenAIUseCase(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
     business_justification: Mapped[str | None] = mapped_column(Text)
 
     category: Mapped[UseCaseCategory] = mapped_column(
-        SAEnum(UseCaseCategory, name="use_case_category"),
+        SAEnum(UseCaseCategory, name="use_case_category", native_enum=False),
         nullable=False,
     )
     status: Mapped[UseCaseStatus] = mapped_column(
-        SAEnum(UseCaseStatus, name="use_case_status"),
+        SAEnum(UseCaseStatus, name="use_case_status", native_enum=False),
         default=UseCaseStatus.DRAFT,
     )
     risk_rating: Mapped[RiskRating] = mapped_column(
-        SAEnum(RiskRating, name="risk_rating"),
+        SAEnum(RiskRating, name="risk_rating", native_enum=False),
         default=RiskRating.MEDIUM,
     )
 
     # Data & privacy
     data_classification: Mapped[DataClassification] = mapped_column(
-        SAEnum(DataClassification, name="data_classification"),
+        SAEnum(DataClassification, name="data_classification", native_enum=False),
         default=DataClassification.INTERNAL,
     )
     handles_pii: Mapped[bool] = mapped_column(Boolean, default=False)
