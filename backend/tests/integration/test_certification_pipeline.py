@@ -112,15 +112,12 @@ async def test_full_certification_pipeline(client: AsyncClient):
     cert_resp = await client.post("/api/v1/certifications/generate", json={
         "use_case_id": use_case_id,
     })
-    # Cert generation may return 500 in test env due to enum/varchar mismatch
-    # when using Base.metadata.create_all instead of Alembic migrations.
-    # In production, Alembic creates proper native PG enum types.
-    if cert_resp.status_code == 200:
-        pack = cert_resp.json()
-        assert pack["use_case_id"] == use_case_id
-        assert len(pack["sections"]) == 8
-        assert pack["overall_status"] in ["approved", "conditional"]
-        assert pack["summary"]["total_sections"] == 8
+    assert cert_resp.status_code == 200
+    pack = cert_resp.json()
+    assert pack["use_case_id"] == use_case_id
+    assert len(pack["sections"]) == 8
+    assert pack["overall_status"] in ["approved", "conditional"]
+    assert pack["summary"]["total_sections"] == 8
 
 
 @pytest.mark.asyncio

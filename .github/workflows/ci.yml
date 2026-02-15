@@ -69,8 +69,6 @@ jobs:
         run: |
           cd backend
           pip install ".[dev]"
-      - name: Run migrations
-        run: cd backend && alembic upgrade head
       - name: Run tests
         run: cd backend && python -m pytest tests/ -v --cov=app --cov-report=xml
       - name: Upload coverage
