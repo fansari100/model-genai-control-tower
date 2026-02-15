@@ -1,0 +1,65 @@
+########################################################################
+# Control Tower – Security Scan Pipeline
+########################################################################
+# Runs garak vulnerability scans and PyRIT scenarios.
+########################################################################
+name: Security Scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: "Scan type"
+        required: true
+        type: choice
+        options:
+          - garak
+          - pyrit
+          - all
+
+env:
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  garak-scan:
+    name: garak LLM Vulnerability Scan
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.scan_type == 'garak' || github.event.inputs.scan_type == 'all' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install garak
+        run: pip install garak
+      - name: Run garak scan
+        run: |
+          garak --model_type openai --model_name gpt-4o \
+            --probes promptinject,leakreplay,encoding,snowball \
+            --report_prefix ct_garak_$(date +%Y%m%d)
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: garak-scan-results
+          path: "*.jsonl"
+
+  pyrit-scan:
+    name: PyRIT Security Scenarios
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.scan_type == 'pyrit' || github.event.inputs.scan_type == 'all' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install PyRIT
+        run: pip install pyrit
+      - name: Run scenarios
+        run: |
+          cd eval/pyrit
+          python scenarios/financial_advisor_injection.py
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyrit-results
+          path: eval/pyrit/results/

@@ -1,0 +1,67 @@
+{
+  "realm": "control-tower",
+  "enabled": true,
+  "displayName": "Control Tower",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "roles": {
+    "realm": [
+      { "name": "admin", "description": "System administrator" },
+      { "name": "model_risk_officer", "description": "Model Risk Officer – approval authority" },
+      { "name": "model_control_analyst", "description": "Model Control Analyst – day-to-day governance" },
+      { "name": "business_line_head", "description": "Business Line Head – business approval" },
+      { "name": "auditor", "description": "Read-only audit access" },
+      { "name": "developer", "description": "AI/ML developer – can submit use cases" }
+    ]
+  },
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@controltower.local",
+      "firstName": "System",
+      "lastName": "Admin",
+      "credentials": [{ "type": "password", "value": "admin", "temporary": false }],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "mro",
+      "enabled": true,
+      "email": "mro@controltower.local",
+      "firstName": "Model Risk",
+      "lastName": "Officer",
+      "credentials": [{ "type": "password", "value": "mro123", "temporary": false }],
+      "realmRoles": ["model_risk_officer"]
+    },
+    {
+      "username": "analyst",
+      "enabled": true,
+      "email": "analyst@controltower.local",
+      "firstName": "Control",
+      "lastName": "Analyst",
+      "credentials": [{ "type": "password", "value": "analyst123", "temporary": false }],
+      "realmRoles": ["model_control_analyst"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "ct-frontend",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "rootUrl": "http://localhost:3000",
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true
+    },
+    {
+      "clientId": "ct-backend",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "ct-backend-secret",
+      "bearerOnly": true,
+      "protocol": "openid-connect"
+    }
+  ]
+}

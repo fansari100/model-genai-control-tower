@@ -1,0 +1,52 @@
+# ── Python ───────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+test.db
+
+# ── Node ─────────────────────────────────────
+node_modules/
+.next/
+out/
+.env.local
+
+# ── IDE ──────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Environment ──────────────────────────────
+.env
+!.env.example
+
+# ── Docker volumes ───────────────────────────
+pgdata/
+miniodata/
+redpandadata/
+
+# ── Eval results (generated) ────────────────
+eval/promptfoo/results/*.json
+eval/pyrit/results/*.json
+eval/sample-data/aibom/
+eval/sample-data/cert-packs/
+*.jsonl.results
+
+# ── OS ───────────────────────────────────────
+.DS_Store
+Thumbs.db

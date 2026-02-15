@@ -1,0 +1,102 @@
+########################################################################
+# Runbook: Disaster Recovery Plan
+########################################################################
+
+runbook_id: RB-DR-001
+title: "Control Tower – Disaster Recovery Procedures"
+owner: SRE + Model Control
+classification: CONFIDENTIAL
+last_tested: 2026-01-15
+next_test: 2026-07-15
+
+objectives:
+  RPO: 1 hour   # Recovery Point Objective: max 1h data loss
+  RTO: 4 hours  # Recovery Time Objective: service restored in 4h
+  MTPD: 24 hours  # Maximum Tolerable Period of Disruption
+
+architecture:
+  primary_region: us-east-1
+  secondary_region: us-west-2
+  tertiary_region: eu-west-1
+  replication:
+    database: "Aurora Global Database (async replication, RPO < 1s)"
+    object_storage: "S3 Cross-Region Replication (async)"
+    kafka: "MirrorMaker 2 cross-region replication"
+    temporal: "Multi-cluster replication"
+
+scenarios:
+  # ── Scenario 1: Single AZ Failure ─────────────────────────
+  single_az_failure:
+    detection: "K8s topology spread constraints auto-redistribute pods"
+    action: "Automatic — no manual intervention required"
+    rto: "< 5 minutes"
+    rpo: "0 (no data loss)"
+
+  # ── Scenario 2: Full Region Failure ────────────────────────
+  full_region_failure:
+    detection: "Route53 health checks fail for primary region"
+    steps:
+      1: "Route53 automatic failover to secondary region"
+      2: "Aurora Global Database promotes secondary to primary"
+      3: "Update Temporal cluster to point to secondary DB"
+      4: "Verify S3 evidence artifacts accessible via CRR"
+      5: "Restart Kafka consumers in secondary region"
+      6: "Run smoke tests against secondary"
+      7: "Update DNS CNAME for frontend"
+    rto: "< 4 hours"
+    rpo: "< 1 hour (async replication lag)"
+    rollback: "Reverse procedure when primary region recovers"
+
+  # ── Scenario 3: Database Corruption ────────────────────────
+  database_corruption:
+    detection: "Data integrity checks fail or application errors spike"
+    steps:
+      1: "Isolate corrupted database (remove from load balancer)"
+      2: "Restore from latest Aurora snapshot (automated daily + transaction logs)"
+      3: "Replay Kafka audit events for the gap period"
+      4: "Re-verify evidence artifact integrity"
+      5: "Notify compliance of potential data loss window"
+    rto: "< 2 hours"
+    rpo: "< 5 minutes (point-in-time recovery)"
+
+  # ── Scenario 4: Ransomware / Security Breach ──────────────
+  security_breach:
+    detection: "SIEM alert or anomalous activity detected"
+    steps:
+      1: "Activate incident response team (PagerDuty P1)"
+      2: "Isolate affected systems (network segmentation)"
+      3: "Preserve evidence (forensic snapshot of affected instances)"
+      4: "Restore from known-good backup (pre-breach point-in-time)"
+      5: "Rotate ALL credentials (Vault + DB + API keys + mTLS certs)"
+      6: "Scan for persistence mechanisms"
+      7: "Notify CISO + Legal + Regulatory within 24h"
+    rto: "< 24 hours"
+    rpo: "Determined by breach timeline analysis"
+
+backup_schedule:
+  database:
+    type: "Aurora automated backup + manual weekly snapshot"
+    retention: "35 days automated, 1 year manual"
+    encryption: "AES-256 via AWS KMS"
+    cross_region: true
+
+  evidence_store:
+    type: "S3 versioning + cross-region replication"
+    retention: "7 years (regulatory) / permanent (WORM-locked)"
+    encryption: "SSE-KMS"
+    immutable: true  # Object Lock prevents deletion
+
+  kafka_events:
+    type: "Tiered storage (hot: 7d, warm: 90d, cold: S3 7yr)"
+    replication_factor: 3
+    min_isr: 2
+
+testing:
+  frequency: semi-annual
+  last_test_results:
+    date: 2026-01-15
+    scenario_tested: full_region_failure
+    actual_rto: "3h 22m"
+    actual_rpo: "< 45s"
+    status: PASSED
+    findings: "Kafka consumer group rebalance took longer than expected. Added pre-provisioned consumers in DR region."

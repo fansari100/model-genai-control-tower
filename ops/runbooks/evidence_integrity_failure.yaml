@@ -1,0 +1,62 @@
+########################################################################
+# Runbook: Evidence Integrity Failure (P1)
+########################################################################
+
+runbook_id: RB-002
+title: "Evidence Integrity Failure – SHA-256 Mismatch Detected"
+severity: critical
+owner: Model Control Team + Compliance
+last_reviewed: 2026-02-15
+
+trigger:
+  alert: evidence_integrity_failure
+  condition: "evidence verification returns integrity_failure"
+
+impact:
+  - "REGULATORY: Audit trail integrity compromised"
+  - "All certification packs referencing affected artifacts must be re-validated"
+  - "Potential SOX/regulatory reporting obligation"
+
+diagnosis_steps:
+  1_identify_affected_artifacts:
+    query: "SELECT id, content_hash, chain_hash, storage_key FROM evidence_artifacts WHERE id IN (<alert.artifact_ids>)"
+
+  2_verify_storage:
+    command: "mc stat local/<bucket>/<key> && mc hash local/<bucket>/<key>"
+    action: "Compare stored hash vs database content_hash"
+
+  3_check_chain:
+    description: "Verify hash chain from genesis to affected artifact"
+    api_call: "GET /api/v1/evidence/<artifact_id>/verify"
+
+  4_check_audit_logs:
+    description: "Review Kafka audit events around the artifact creation time"
+    command: "rpk topic consume ct.audit.events --offset <timestamp>"
+
+  5_check_for_tampering:
+    description: "Review MinIO audit log for object modifications"
+    command: "mc admin audit local --last 24h | grep <storage_key>"
+
+remediation:
+  immediate:
+    - "Quarantine affected artifacts (mark as integrity_failed in DB)"
+    - "Disable WORM lock modification if compromised"
+    - "Notify Compliance team immediately"
+    - "Preserve all logs for forensic investigation"
+  short_term:
+    - "Re-run evaluations that produced affected artifacts"
+    - "Re-generate certification packs with new artifacts"
+    - "Verify no other artifacts in the chain are affected"
+  long_term:
+    - "Review storage access controls (IAM policies)"
+    - "Enable S3 versioning if not already active"
+    - "Implement real-time integrity monitoring (not just on-demand)"
+
+escalation:
+  immediate_notify:
+    - compliance-officer@firm.com
+    - ciso@firm.com
+    - model-risk-officer@firm.com
+  regulatory_disclosure:
+    required_if: "Tampering confirmed on regulatory-retention artifacts"
+    notify: "Legal + Regulatory Affairs within 24h"

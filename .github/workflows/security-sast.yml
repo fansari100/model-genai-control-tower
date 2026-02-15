@@ -1,0 +1,113 @@
+########################################################################
+# Control Tower – SAST / Dependency Scanning Pipeline
+########################################################################
+name: Security SAST
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 4 * * 1"  # Weekly Monday 04:00 UTC
+
+jobs:
+  # ── Snyk Dependency Scan ─────────────────────────────────
+  snyk-python:
+    name: Snyk Python Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snyk/actions/python@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --file=backend/pyproject.toml --severity-threshold=high
+
+  snyk-node:
+    name: Snyk Node Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --file=frontend/package.json --severity-threshold=high
+
+  # ── Trivy Container Scan ─────────────────────────────────
+  trivy-backend:
+    name: Trivy Container Scan (Backend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t ct-backend:scan ./backend
+      - uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ct-backend:scan
+          format: sarif
+          output: trivy-backend.sarif
+          severity: CRITICAL,HIGH
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-backend.sarif
+
+  trivy-frontend:
+    name: Trivy Container Scan (Frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t ct-frontend:scan ./frontend
+      - uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ct-frontend:scan
+          format: sarif
+          output: trivy-frontend.sarif
+          severity: CRITICAL,HIGH
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-frontend.sarif
+
+  # ── Bandit Python SAST ───────────────────────────────────
+  bandit:
+    name: Bandit Python SAST
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install bandit[toml]
+      - run: bandit -r backend/app/ -f json -o bandit-report.json --severity-level medium || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
+  # ── Semgrep SAST ─────────────────────────────────────────
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: semgrep scan --config auto --json --output semgrep-report.json backend/ frontend/src/ || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report
+          path: semgrep-report.json
+
+  # ── OPA Policy Tests ─────────────────────────────────────
+  opa-test:
+    name: OPA Policy Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install OPA
+        run: |
+          curl -L -o opa https://openpolicyagent.org/downloads/v0.70.0/opa_linux_amd64_static
+          chmod 755 opa && sudo mv opa /usr/local/bin/
+      - run: opa check policies/opa/*.rego

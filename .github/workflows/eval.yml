@@ -1,0 +1,70 @@
+########################################################################
+# Control Tower – Evaluation Pipeline
+########################################################################
+# Runs GenAI evaluations on schedule and on-demand.
+# Includes promptfoo quality/red-team evals.
+########################################################################
+name: Evaluation Suite
+
+on:
+  schedule:
+    - cron: "0 6 * * 1-5"  # Weekdays at 6am UTC
+  workflow_dispatch:
+    inputs:
+      eval_type:
+        description: "Evaluation type"
+        required: true
+        type: choice
+        options:
+          - quality
+          - redteam
+          - all
+
+env:
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  # ── Quality Evaluation ───────────────────────────────────
+  quality-eval:
+    name: Quality & Correctness Eval
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.eval_type == 'quality' || github.event.inputs.eval_type == 'all' || github.event_name == 'schedule' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run promptfoo quality eval
+        run: |
+          cd eval/promptfoo
+          npx promptfoo@latest eval \
+            --config promptfooconfig.yaml \
+            --output results/quality_$(date +%Y%m%d).json \
+            --no-cache
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-eval-results
+          path: eval/promptfoo/results/
+
+  # ── Red Team Evaluation ──────────────────────────────────
+  redteam-eval:
+    name: Red Team Adversarial Eval
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.eval_type == 'redteam' || github.event.inputs.eval_type == 'all' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run promptfoo red team
+        run: |
+          cd eval/promptfoo
+          npx promptfoo@latest redteam run \
+            --config redteam/redteam_config.yaml \
+            --output results/redteam_$(date +%Y%m%d).json
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: redteam-eval-results
+          path: eval/promptfoo/results/

@@ -1,0 +1,70 @@
+########################################################################
+# Control Tower – PagerDuty / Alerting Configuration
+########################################################################
+
+service:
+  name: control-tower
+  escalation_policy: model-control-oncall
+
+routing_rules:
+  - name: critical_api_down
+    condition: "alert.severity == 'critical' AND alert.source == 'api_availability'"
+    action:
+      notify: pagerduty
+      escalation: immediate
+      channel: "#ct-incidents"
+    sla_response_minutes: 5
+    sla_resolution_minutes: 60
+
+  - name: evidence_integrity_failure
+    condition: "alert.name == 'evidence_integrity_failure'"
+    action:
+      notify: pagerduty
+      escalation: immediate
+      channel: "#ct-incidents"
+      additional: ["compliance-team@firm.com"]
+    sla_response_minutes: 5
+    sla_resolution_minutes: 30
+
+  - name: eval_pipeline_failure
+    condition: "alert.severity == 'critical' AND alert.source == 'eval_pipeline'"
+    action:
+      notify: pagerduty
+      escalation: 15min
+      channel: "#ct-alerts"
+    sla_response_minutes: 15
+    sla_resolution_minutes: 120
+
+  - name: monitoring_drift_detected
+    condition: "alert.name == 'monitoring_drift_detected'"
+    action:
+      notify: slack
+      channel: "#ct-monitoring"
+      additional_email: ["mro@firm.com"]
+    sla_response_minutes: 30
+
+  - name: guardrail_block_rate_spike
+    condition: "alert.name == 'guardrail_block_rate_high'"
+    action:
+      notify: slack
+      channel: "#ct-security"
+    sla_response_minutes: 60
+
+  - name: attestation_overdue
+    condition: "alert.name == 'tool_attestation_overdue'"
+    action:
+      notify: email
+      recipients: ["model-control-team@firm.com"]
+    sla_response_minutes: 1440  # 24h
+
+on_call_schedule:
+  primary:
+    rotation: weekly
+    timezone: America/New_York
+    members:
+      - role: model_control_analyst
+      - role: sre_engineer
+  secondary:
+    rotation: weekly
+    members:
+      - role: model_risk_officer

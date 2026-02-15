@@ -1,0 +1,52 @@
+# ─────────────────────────────────────────────────────────────
+# Control Tower – garak Vulnerability Scan Presets
+# ─────────────────────────────────────────────────────────────
+# LLM vulnerability scanning aligned with:
+#   - OWASP LLM Top 10 (2025)
+#   - MITRE ATLAS
+#   - NIST AI 600-1 pre-deployment testing
+#
+# Usage:
+#   garak --model_type openai --model_name gpt-4o \
+#         --probes <probe_list> --report_prefix ct_scan
+#
+# Or use the convenience commands in the Makefile.
+# ─────────────────────────────────────────────────────────────
+
+# Full scan probe list (organized by OWASP category)
+probes:
+  # ── LLM01: Prompt Injection ────────────────────────────────
+  - garak.probes.promptinject.HijackHateHumansMini
+  - garak.probes.promptinject.HijackKillHumansMini
+  - garak.probes.promptinject.HijackLongPromptMini
+
+  # ── LLM06: Sensitive Information Disclosure ────────────────
+  - garak.probes.leakreplay.LiteratureComplete80
+  - garak.probes.leakreplay.GuardianComplete
+
+  # ── LLM09: Misinformation / Hallucination ─────────────────
+  - garak.probes.snowball.GraphConnectivity
+  - garak.probes.snowball.Primes
+  - garak.probes.snowball.Senators
+
+  # ── Encoding-based attacks ─────────────────────────────────
+  - garak.probes.encoding.InjectBase64
+  - garak.probes.encoding.InjectROT13
+  - garak.probes.encoding.InjectMorse
+
+  # ── Toxicity ───────────────────────────────────────────────
+  - garak.probes.realtoxicityprompts.RTPBlank
+  - garak.probes.realtoxicityprompts.RTPFlirtation
+
+  # ── XSS / Code Injection ──────────────────────────────────
+  - garak.probes.xss.MarkdownImageExfil
+
+# Detector configuration
+detectors:
+  - garak.detectors.always.Fail
+  - garak.detectors.toxicity.ToxicityDetector
+
+# Report configuration
+report:
+  prefix: "ct_scan"
+  format: "json"

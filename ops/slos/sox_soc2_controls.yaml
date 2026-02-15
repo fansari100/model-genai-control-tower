@@ -1,0 +1,162 @@
+########################################################################
+# Control Tower – SOX / SOC2 Compliance Controls
+########################################################################
+# Maps SOC2 Trust Services Criteria to Control Tower implementations.
+# This document is the basis for the firm's SOC2 Type II audit evidence.
+########################################################################
+
+framework: SOC2 Type II
+scope: Control Tower AI Governance Platform
+owner: Technology Risk + Model Control
+audit_period: Annual
+last_audit: 2026-01-15
+next_audit: 2027-01-15
+
+trust_service_criteria:
+  # ── CC1: Control Environment ───────────────────────────────
+  CC1_Control_Environment:
+    controls:
+      - id: CC1.1
+        name: "RBAC enforcement"
+        implementation: "Keycloak OIDC with 6 roles; OPA policy enforcement; JWT RS256 verification"
+        evidence: "Keycloak realm config, OPA policies, auth.py JWKS verification"
+        automated: true
+        test_frequency: continuous
+
+      - id: CC1.2
+        name: "Separation of duties"
+        implementation: "Developers cannot approve; Auditors read-only; Approvals require MRO/BLH role"
+        evidence: "OPA approval_gates.rego, auth.py require_approver dependency"
+        automated: true
+
+  # ── CC2: Communication and Information ─────────────────────
+  CC2_Communication:
+    controls:
+      - id: CC2.1
+        name: "Audit event logging"
+        implementation: "Every governance action → typed audit event → Kafka (acks=all, idempotent)"
+        evidence: "audit_events.py (40+ event types), Kafka topic ct.audit.events"
+        automated: true
+        test_frequency: continuous
+
+      - id: CC2.2
+        name: "Change notification"
+        implementation: "Slack + email notifications for approvals, certifications, recertifications"
+        evidence: "notification.py Temporal activities, PagerDuty integration"
+        automated: true
+
+  # ── CC3: Risk Assessment ───────────────────────────────────
+  CC3_Risk_Assessment:
+    controls:
+      - id: CC3.1
+        name: "Automated risk scoring"
+        implementation: "Weighted factor model → composite score → risk tier → required test suites + approvals"
+        evidence: "risk_rating.py, use case intake API, test_risk_rating.py"
+        automated: true
+        test_frequency: per_intake
+
+      - id: CC3.2
+        name: "Compliance framework mapping"
+        implementation: "7 frameworks mapped: SR 11-7, NIST 600-1, OWASP LLM/Agentic, ISO 42001, MITRE ATLAS, FINRA"
+        evidence: "compliance_mapping.py, /compliance frontend page, /dashboard/compliance-matrix API"
+        automated: true
+
+  # ── CC5: Control Activities ────────────────────────────────
+  CC5_Control_Activities:
+    controls:
+      - id: CC5.1
+        name: "Pre-deployment testing gate"
+        implementation: "Temporal workflow enforces eval → approval → deploy sequence; OPA blocks insufficient test coverage"
+        evidence: "certification.py workflow, approval_gates.rego, evaluation activities"
+        automated: true
+
+      - id: CC5.2
+        name: "Secrets management"
+        implementation: "HashiCorp Vault for all credentials; Kubernetes secrets for runtime; no plaintext in env vars in production"
+        evidence: "vault.py, Helm values.yaml vault section, K8s service account auth"
+        automated: true
+
+      - id: CC5.3
+        name: "Data classification enforcement"
+        implementation: "OPA data_classification.rego: destination allowlists per data class; PII redaction on outputs"
+        evidence: "data_classification.rego, pii_redaction.py (Presidio), guardrails.py"
+        automated: true
+
+      - id: CC5.4
+        name: "Evidence integrity"
+        implementation: "SHA-256 content-addressed storage, hash chain, MinIO/S3 Object Lock (WORM), integrity verification endpoint"
+        evidence: "evidence.py service, evidence API verify endpoint, test_evidence.py"
+        automated: true
+
+  # ── CC6: Logical and Physical Access ───────────────────────
+  CC6_Access:
+    controls:
+      - id: CC6.1
+        name: "Network segmentation"
+        implementation: "Kubernetes NetworkPolicy: ingress only from nginx; egress limited to namespace + port 443"
+        evidence: "Helm values.yaml networkPolicy section, K8s NetworkPolicy manifests"
+        automated: true
+
+      - id: CC6.2
+        name: "Row-level security"
+        implementation: "PostgreSQL RLS policies isolate data by business_unit; admin/auditor bypass"
+        evidence: "002_row_level_security.py migration, RLS policies on 7 tables"
+        automated: true
+
+      - id: CC6.3
+        name: "Container security"
+        implementation: "Non-root user, read-only rootfs, dropped capabilities, seccomp profile, Trivy scan in CI"
+        evidence: "Helm deployment template securityContext, security-sast.yml CI pipeline"
+        automated: true
+
+  # ── CC7: System Operations ─────────────────────────────────
+  CC7_Operations:
+    controls:
+      - id: CC7.1
+        name: "Continuous monitoring"
+        implementation: "Prometheus metrics, Grafana dashboards, SLO definitions, PagerDuty alerting"
+        evidence: "slo_definitions.yaml, pagerduty_rules.yaml, Grafana dashboard JSON"
+        automated: true
+
+      - id: CC7.2
+        name: "Incident response"
+        implementation: "Runbooks per alert type, escalation chains, SLA definitions"
+        evidence: "ops/runbooks/ directory, PagerDuty escalation policy"
+        automated: partial
+
+      - id: CC7.3
+        name: "Change management"
+        implementation: "CI/CD pipeline gates (lint + test + SAST + build), Helm rollout strategy, PDB"
+        evidence: "ci.yml, security-sast.yml, Helm deployment strategy, PodDisruptionBudget"
+        automated: true
+
+  # ── CC8: Change Management ─────────────────────────────────
+  CC8_Change_Management:
+    controls:
+      - id: CC8.1
+        name: "Automated deployment pipeline"
+        implementation: "GitHub Actions CI → SAST → build → Helm deploy; blue-green via K8s RollingUpdate"
+        evidence: "ci.yml, security-sast.yml, Helm deployment template"
+        automated: true
+
+      - id: CC8.2
+        name: "ServiceNow CAB integration"
+        implementation: "ServiceNow adapter creates Change Requests for production deployments"
+        evidence: "servicenow.py integration adapter"
+        automated: true
+
+  # ── CC9: Risk Mitigation ───────────────────────────────────
+  CC9_Risk_Mitigation:
+    controls:
+      - id: CC9.1
+        name: "Vulnerability scanning"
+        implementation: "Snyk (deps), Trivy (containers), Bandit (Python SAST), Semgrep (multi-language SAST)"
+        evidence: "security-sast.yml pipeline, scan artifacts"
+        automated: true
+        test_frequency: per_commit
+
+      - id: CC9.2
+        name: "GenAI-specific risk controls"
+        implementation: "3-layer eval (promptfoo + PyRIT + garak), cascade guardrails, agent controls, AIBOM supply chain"
+        evidence: "eval/ configs, guardrails.py, agent_controls.rego, aibom.py"
+        automated: true

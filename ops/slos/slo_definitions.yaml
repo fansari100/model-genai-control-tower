@@ -1,0 +1,108 @@
+########################################################################
+# Control Tower – Service Level Objectives (SLOs)
+########################################################################
+# These SLOs are monitored via Prometheus + Grafana and enforce
+# error budgets that gate deployments.
+########################################################################
+
+service: control-tower
+owner: model-control-team
+review_cadence: monthly
+
+slos:
+  # ── API Availability ───────────────────────────────────────
+  - name: api_availability
+    description: "Control Tower API returns non-5xx responses"
+    target: 99.95%
+    window: 30d
+    indicator:
+      type: availability
+      metric: |
+        1 - (
+          sum(rate(ct_http_requests_total{status_code=~"5.."}[5m]))
+          /
+          sum(rate(ct_http_requests_total[5m]))
+        )
+    error_budget:
+      monthly_minutes: 21.6  # 0.05% of 43200 min
+    alert_burn_rate:
+      - window: 1h
+        burn_rate: 14.4
+        severity: critical
+      - window: 6h
+        burn_rate: 6
+        severity: warning
+
+  # ── API Latency ────────────────────────────────────────────
+  - name: api_latency_p99
+    description: "99th percentile API latency under 2 seconds"
+    target: 99.0%
+    window: 30d
+    indicator:
+      type: latency
+      metric: |
+        histogram_quantile(0.99,
+          sum(rate(ct_http_request_duration_seconds_bucket[5m])) by (le)
+        ) < 2.0
+    alert_thresholds:
+      - percentile: p50
+        max_seconds: 0.2
+        severity: info
+      - percentile: p95
+        max_seconds: 1.0
+        severity: warning
+      - percentile: p99
+        max_seconds: 2.0
+        severity: critical
+
+  # ── Evaluation Pipeline ────────────────────────────────────
+  - name: eval_completion_rate
+    description: "Triggered evaluations complete within timeout"
+    target: 99.0%
+    window: 7d
+    indicator:
+      type: quality
+      metric: |
+        sum(rate(ct_eval_completed_total[1h]))
+        /
+        sum(rate(ct_eval_triggered_total[1h]))
+
+  # ── Evidence Integrity ─────────────────────────────────────
+  - name: evidence_integrity
+    description: "Evidence artifacts pass integrity verification"
+    target: 100.0%
+    window: 30d
+    indicator:
+      type: correctness
+      metric: |
+        sum(ct_evidence_verification_success_total)
+        /
+        sum(ct_evidence_verification_total)
+    alert_thresholds:
+      - value: "<1.0"
+        severity: critical
+        description: "Any evidence integrity failure is a P1 incident"
+
+  # ── Monitoring Canary Pass Rate ────────────────────────────
+  - name: canary_pass_rate
+    description: "Monitoring canary prompts return expected results"
+    target: 95.0%
+    window: 7d
+    indicator:
+      type: quality
+      metric: |
+        sum(ct_monitoring_canaries_passed)
+        /
+        sum(ct_monitoring_canaries_total)
+
+  # ── Audit Event Delivery ───────────────────────────────────
+  - name: audit_event_delivery
+    description: "Audit events successfully published to Kafka"
+    target: 99.99%
+    window: 30d
+    indicator:
+      type: availability
+      metric: |
+        sum(rate(ct_audit_events_published_total[5m]))
+        /
+        sum(rate(ct_audit_events_attempted_total[5m]))

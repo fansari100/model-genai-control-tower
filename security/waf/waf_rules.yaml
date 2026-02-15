@@ -1,0 +1,71 @@
+########################################################################
+# Control Tower – WAF Rules (AWS WAF / NGINX ModSecurity)
+########################################################################
+
+waf_config:
+  mode: blocking  # blocking | detection
+  log_level: info
+
+  # ── AWS WAF Managed Rules ──────────────────────────────────
+  aws_managed_rules:
+    - name: AWSManagedRulesCommonRuleSet
+      priority: 1
+      action: block
+
+    - name: AWSManagedRulesKnownBadInputsRuleSet
+      priority: 2
+      action: block
+
+    - name: AWSManagedRulesSQLiRuleSet
+      priority: 3
+      action: block
+
+    - name: AWSManagedRulesLinuxRuleSet
+      priority: 4
+      action: block
+
+  # ── Custom Rules ───────────────────────────────────────────
+  custom_rules:
+    - name: rate_limit_api
+      priority: 10
+      action: block
+      statement:
+        rateBasedStatement:
+          limit: 1000  # requests per 5-minute window per IP
+          aggregateKeyType: IP
+
+    - name: block_non_json_post
+      priority: 20
+      action: block
+      statement:
+        andStatement:
+          - httpMethod: POST
+          - notStatement:
+              headerContains:
+                name: Content-Type
+                value: application/json
+
+    - name: geo_restrict
+      priority: 30
+      action: block
+      statement:
+        geoMatchStatement:
+          countryCodes:
+            exclude: [US, GB, IE, SG, HK, JP]  # Allowed regions only
+
+    - name: block_large_payloads
+      priority: 40
+      action: block
+      statement:
+        sizeConstraintStatement:
+          fieldToMatch: body
+          comparisonOperator: GT
+          size: 10485760  # 10MB max
+
+  # ── IP Allowlist for Internal Networks ─────────────────────
+  ip_allowlist:
+    enabled: true
+    cidrs:
+      - 10.0.0.0/8      # Internal VPC
+      - 172.16.0.0/12    # Corporate network
+      - 192.168.0.0/16   # VPN

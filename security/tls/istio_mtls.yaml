@@ -1,0 +1,46 @@
+########################################################################
+# Control Tower – Istio mTLS Configuration
+########################################################################
+# Enforces mutual TLS between all services in the control-tower namespace.
+# Istio sidecar proxies handle certificate rotation automatically.
+########################################################################
+
+# Strict mTLS for the entire namespace
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: control-tower-mtls
+  namespace: control-tower
+spec:
+  mtls:
+    mode: STRICT
+---
+# Destination rules for mTLS
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: control-tower-mtls-dr
+  namespace: control-tower
+spec:
+  host: "*.control-tower.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+---
+# Authorization policy: only allow traffic from within the namespace
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: control-tower-authz
+  namespace: control-tower
+spec:
+  rules:
+    - from:
+        - source:
+            namespaces: ["control-tower", "ingress-nginx", "monitoring"]
+    - to:
+        - operation:
+            paths: ["/health", "/metrics"]
+      from:
+        - source:
+            namespaces: ["monitoring"]

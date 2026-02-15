@@ -1,0 +1,242 @@
+########################################################################
+# Control Tower – Helm Values (Production)
+########################################################################
+
+global:
+  environment: production
+  region: us-east-1
+  multiRegion:
+    enabled: true
+    regions: [us-east-1, us-west-2, eu-west-1]
+    activeActive: true
+
+# ── Backend API ──────────────────────────────────────────────
+backend:
+  replicaCount: 3
+  image:
+    repository: registry.internal.firm/control-tower/backend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  podDisruptionBudget:
+    minAvailable: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  env:
+    ENVIRONMENT: production
+    LOG_LEVEL: INFO
+    ENABLE_OTEL: "true"
+    ENABLE_KAFKA: "true"
+    ENABLE_TEMPORAL: "true"
+    ENABLE_OPA: "true"
+  # Secrets from Vault
+  vault:
+    enabled: true
+    role: control-tower-backend
+    secrets:
+      - path: secret/data/control-tower/database
+        key: DATABASE_URL
+      - path: secret/data/control-tower/minio
+        key: MINIO_ACCESS_KEY
+      - path: secret/data/control-tower/minio
+        key: MINIO_SECRET_KEY
+      - path: secret/data/control-tower/kafka
+        key: KAFKA_BOOTSTRAP_SERVERS
+      - path: secret/data/control-tower/openai
+        key: OPENAI_API_KEY
+      - path: secret/data/control-tower/keycloak
+        key: KEYCLOAK_CLIENT_SECRET
+  service:
+    type: ClusterIP
+    port: 8000
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: control-tower-api.internal.firm
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: ct-api-tls
+        hosts:
+          - control-tower-api.internal.firm
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    failureThreshold: 3
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app: control-tower-backend
+
+# ── Frontend ─────────────────────────────────────────────────
+frontend:
+  replicaCount: 2
+  image:
+    repository: registry.internal.firm/control-tower/frontend
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+  service:
+    type: ClusterIP
+    port: 3000
+  ingress:
+    enabled: true
+    className: nginx
+    hosts:
+      - host: control-tower.internal.firm
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: ct-frontend-tls
+        hosts:
+          - control-tower.internal.firm
+
+# ── Temporal Worker ──────────────────────────────────────────
+worker:
+  replicaCount: 2
+  image:
+    repository: registry.internal.firm/control-tower/worker
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+
+# ── PostgreSQL ───────────────────────────────────────────────
+postgresql:
+  enabled: false  # Use managed RDS/Aurora in production
+  external:
+    host: control-tower-db.cluster-xxxx.us-east-1.rds.amazonaws.com
+    port: 5432
+    database: control_tower
+    sslMode: verify-full
+  architecture: replication
+  readReplicas: 2
+  backup:
+    enabled: true
+    schedule: "0 2 * * *"
+    retentionDays: 30
+
+# ── MinIO / S3 ───────────────────────────────────────────────
+minio:
+  enabled: false  # Use S3 with Object Lock in production
+  external:
+    endpoint: s3.us-east-1.amazonaws.com
+    bucket_evidence: ct-evidence-prod
+    bucket_artifacts: ct-artifacts-prod
+    encryption:
+      enabled: true
+      kmsKeyId: arn:aws:kms:us-east-1:xxxx:key/xxxx
+    objectLock:
+      enabled: true  # WORM compliance
+      defaultRetention:
+        mode: GOVERNANCE
+        days: 2555  # 7 years regulatory retention
+
+# ── Redis (caching + rate limiting) ──────────────────────────
+redis:
+  enabled: true
+  architecture: sentinel
+  sentinel:
+    enabled: true
+    masterSet: ct-master
+  auth:
+    existingSecret: ct-redis-secret
+
+# ── Feature Flags ────────────────────────────────────────────
+featureFlags:
+  provider: configmap  # Options: configmap, launchdarkly, unleash
+  defaults:
+    enable_agentic_evals: true
+    enable_cascade_guardrails: true
+    enable_aibom_generation: true
+    enable_pdf_cert_packs: true
+    enable_slack_notifications: true
+    enable_email_notifications: false
+    max_concurrent_evals: 5
+    eval_timeout_minutes: 30
+
+# ── Observability ────────────────────────────────────────────
+observability:
+  datadog:
+    enabled: false
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 15s
+  grafana:
+    enabled: true
+    dashboards:
+      enabled: true
+
+# ── Network Policies ─────────────────────────────────────────
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: control-tower
+    - to:  # External: LLM APIs, SMTP
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP
