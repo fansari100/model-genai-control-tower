@@ -47,6 +47,13 @@ eval/sample-data/aibom/
 eval/sample-data/cert-packs/
 *.jsonl.results
 
+# ── Terraform ────────────────────────────────
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+.terraform.lock.hcl
+
 # ── OS ───────────────────────────────────────
 .DS_Store
 Thumbs.db
