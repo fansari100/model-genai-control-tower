@@ -4,15 +4,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import sqlalchemy as sa
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 
 from app.database import get_db
 from app.models.evaluation import EvalStatus, EvaluationRun
-from app.models.finding import Finding, FindingSeverity, FindingStatus
+from app.models.finding import Finding
 from app.models.genai_use_case import GenAIUseCase
 from app.models.model import Model
-from app.models.tool import Tool, ToolStatus
+from app.models.tool import Tool
 from app.services.compliance_mapping import get_full_compliance_matrix
 
 if TYPE_CHECKING:
@@ -90,8 +91,8 @@ async def get_dashboard_summary(db: AsyncSession = Depends(get_db)):
         await db.execute(
             select(func.count())
             .select_from(Finding)
-            .where(Finding.status.in_([FindingStatus.OPEN, FindingStatus.IN_PROGRESS]))
-            .where(Finding.severity.in_([FindingSeverity.CRITICAL, FindingSeverity.HIGH]))
+            .where(sa.cast(Finding.status, sa.String).in_(["open", "in_progress"]))
+            .where(sa.cast(Finding.severity, sa.String).in_(["critical", "high"]))
         )
     ).scalar_one()
 
@@ -166,7 +167,7 @@ async def get_committee_report(db: AsyncSession = Depends(get_db)):
             select(func.count())
             .select_from(Tool)
             .where(Tool.is_deleted == False)  # noqa: E712
-            .where(Tool.status.in_([ToolStatus.ATTESTATION_DUE, ToolStatus.ATTESTATION_OVERDUE]))
+            .where(sa.cast(Tool.status, sa.String).in_(["attestation_due", "attestation_overdue"]))
         )
     ).scalar_one()
 
@@ -175,7 +176,7 @@ async def get_committee_report(db: AsyncSession = Depends(get_db)):
         (
             await db.execute(
                 select(Finding.severity, func.count())
-                .where(Finding.status.in_([FindingStatus.OPEN, FindingStatus.IN_PROGRESS]))
+                .where(sa.cast(Finding.status, sa.String).in_(["open", "in_progress"]))
                 .group_by(Finding.severity)
             )
         ).all()
