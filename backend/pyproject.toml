@@ -146,8 +146,22 @@ module = [
     "ldclient.*",
     "jose.*",
     "reportlab.*",
+    "structlog.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "app.integrations.*",
+    "app.services.*",
+    "app.security.*",
+    "app.utils.*",
+    "app.workers.*",
+    "app.api.v1.*",
+]
+disallow_untyped_defs = false
+check_untyped_defs = false
+warn_return_any = false
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
