@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import enum
-from typing import TYPE_CHECKING
+from datetime import datetime
 
 from sqlalchemy import DateTime, String, Text
 from sqlalchemy import Enum as SAEnum
@@ -12,9 +12,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 from app.models.base import AuditMixin, TimestampMixin, generate_uuid
-
-if TYPE_CHECKING:
-    from datetime import datetime
 
 
 class IssueSource(enum.StrEnum):

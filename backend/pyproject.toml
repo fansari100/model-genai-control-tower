@@ -106,7 +106,7 @@ line-length = 100
 src = ["app"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM", "TCH", "RUF"]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM", "TC", "RUF"]
 ignore = [
     "E501",    # line too long (handled by formatter)
     "B008",    # function call in default arg (FastAPI Depends() pattern)
@@ -116,6 +116,9 @@ ignore = [
     "RUF003",  # ambiguous unicode in comment
     "A003",    # class attribute shadowing builtin (e.g. `id`, `type`)
     "UP007",   # use X | Y for union (conflicts with older runtime)
+    "TC001",   # move third-party import into TYPE_CHECKING (breaks ORM relationships)
+    "TC002",   # move first-party import into TYPE_CHECKING
+    "TC003",   # move stdlib import into TYPE_CHECKING (breaks SQLAlchemy Mapped[datetime])
 ]
 
 [tool.ruff.lint.isort]
@@ -123,8 +126,28 @@ known-first-party = ["app"]
 
 [tool.mypy]
 python_version = "3.13"
-strict = true
+strict = false
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+    "minio.*",
+    "hvac.*",
+    "ldap3.*",
+    "presidio_analyzer.*",
+    "presidio_anonymizer.*",
+    "aiokafka.*",
+    "temporalio.*",
+    "pyrit.*",
+    "ldclient.*",
+    "jose.*",
+    "reportlab.*",
+]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

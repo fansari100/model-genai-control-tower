@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import enum
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
@@ -14,8 +15,7 @@ from app.database import Base
 from app.models.base import AuditMixin, TimestampMixin, generate_uuid
 
 if TYPE_CHECKING:
-    from datetime import datetime
-
+    pass
     from app.models.genai_use_case import GenAIUseCase
     from app.models.model import Model
 
