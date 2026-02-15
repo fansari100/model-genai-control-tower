@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+import sqlalchemy as sa
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy import select
@@ -12,7 +13,7 @@ from sqlalchemy import select
 from app.database import get_db
 from app.models.approval import Approval
 from app.models.evaluation import EvaluationRun
-from app.models.finding import Finding, FindingSeverity, FindingStatus
+from app.models.finding import Finding
 from app.models.genai_use_case import GenAIUseCase
 from app.models.monitoring import MonitoringPlan
 from app.schemas.evidence import CertificationPackRequest, CertificationPackResponse
@@ -235,8 +236,8 @@ async def generate_certification_pack(
         result2 = await db.execute(
             select(Finding)
             .where(Finding.use_case_id == payload.use_case_id)
-            .where(Finding.severity.in_([FindingSeverity.CRITICAL, FindingSeverity.HIGH]))
-            .where(Finding.status.in_([FindingStatus.OPEN, FindingStatus.IN_PROGRESS]))
+            .where(sa.cast(Finding.severity, sa.String).in_(["critical", "high"]))
+            .where(sa.cast(Finding.status, sa.String).in_(["open", "in_progress"]))
         )
         open_critical = len(result2.scalars().all())
 
