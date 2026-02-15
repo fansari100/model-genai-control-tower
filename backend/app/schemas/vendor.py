@@ -1,15 +1,10 @@
 """Vendor schemas."""
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.vendor import VendorSecurityPosture
-
-if TYPE_CHECKING:
-    from datetime import datetime
 
 
 class VendorBase(BaseModel):

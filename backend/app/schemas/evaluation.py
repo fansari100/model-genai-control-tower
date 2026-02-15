@@ -1,15 +1,10 @@
 """Evaluation schemas."""
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-if TYPE_CHECKING:
-    from datetime import datetime
-
-    from app.models.evaluation import EvalStatus, EvalType
+from app.models.evaluation import EvalStatus, EvalType
 
 
 class EvalRunCreate(BaseModel):

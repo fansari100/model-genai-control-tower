@@ -1,15 +1,10 @@
 """Approval schemas."""
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-if TYPE_CHECKING:
-    from datetime import datetime
-
-    from app.models.approval import ApprovalDecision, ApprovalGateType
+from app.models.approval import ApprovalDecision, ApprovalGateType
 
 
 class ApprovalCreate(BaseModel):
