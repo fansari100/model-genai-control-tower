@@ -12,7 +12,7 @@ from sqlalchemy import select
 from app.database import get_db
 from app.models.approval import Approval
 from app.models.evaluation import EvaluationRun
-from app.models.finding import Finding
+from app.models.finding import Finding, FindingSeverity, FindingStatus
 from app.models.genai_use_case import GenAIUseCase
 from app.models.monitoring import MonitoringPlan
 from app.schemas.evidence import CertificationPackRequest, CertificationPackResponse
@@ -235,8 +235,8 @@ async def generate_certification_pack(
         result2 = await db.execute(
             select(Finding)
             .where(Finding.use_case_id == payload.use_case_id)
-            .where(Finding.severity.in_(["critical", "high"]))
-            .where(Finding.status.in_(["open", "in_progress"]))
+            .where(Finding.severity.in_([FindingSeverity.CRITICAL, FindingSeverity.HIGH]))
+            .where(Finding.status.in_([FindingStatus.OPEN, FindingStatus.IN_PROGRESS]))
         )
         open_critical = len(result2.scalars().all())
 
