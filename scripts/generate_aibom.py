@@ -18,13 +18,13 @@ from app.services.aibom import generate_aibom, aibom_to_json
 def main() -> None:
     print("📋 Generating AI Bills of Materials...")
 
-    # GPT-4o AIBOM
-    gpt4o_aibom = generate_aibom(
-        model_name="GPT-4o",
+    # GPT-5.2 AIBOM
+    gpt52_aibom = generate_aibom(
+        model_name="GPT-5.2",
         model_version="2024-11-20",
         model_type="llm",
         provider="OpenAI",
-        provider_model_id="gpt-4o-2024-11-20",
+        provider_model_id="gpt-5.2-2025-12-11",
         deployment="vendor_api",
         context_window=128000,
         training_cutoff="2024-10",
@@ -42,13 +42,13 @@ def main() -> None:
         },
     )
 
-    # Claude Sonnet 4 AIBOM
+    # Claude Sonnet 5 AIBOM
     claude_aibom = generate_aibom(
-        model_name="Claude Sonnet 4",
+        model_name="Claude Sonnet 5",
         model_version="20250514",
         model_type="llm",
         provider="Anthropic",
-        provider_model_id="claude-sonnet-4-20250514",
+        provider_model_id="claude-sonnet-5-20260110",
         deployment="vendor_api",
         context_window=200000,
         training_cutoff="2025-04",
@@ -77,8 +77,8 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for name, aibom in [
-        ("gpt4o", gpt4o_aibom),
-        ("claude_sonnet_4", claude_aibom),
+        ("gpt52", gpt52_aibom),
+        ("claude_sonnet_5", claude_aibom),
         ("text_embedding_3_large", embeddings_aibom),
     ]:
         output_path = output_dir / f"aibom_{name}.json"

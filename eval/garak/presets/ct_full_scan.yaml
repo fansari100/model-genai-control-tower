@@ -7,7 +7,7 @@
 #   - NIST AI 600-1 pre-deployment testing
 #
 # Usage:
-#   garak --model_type openai --model_name gpt-4o \
+#   garak --model_type openai --model_name gpt-5.2 \
 #         --probes <probe_list> --report_prefix ct_scan
 #
 # Or use the convenience commands in the Makefile.

@@ -80,7 +80,7 @@ class GovernedModel(BaseModel):
     status: ModelStatus
 
     # Architecture
-    base_model: str  # e.g., "gpt-5.2", "claude-sonnet-4"
+    base_model: str  # e.g., "gpt-5.2", "claude-sonnet-5"
     uses_rag: bool = False
     uses_structured_output: bool = True
     client_facing: bool = False
@@ -118,7 +118,7 @@ MODEL_REGISTRY: list[GovernedModel] = [
         version="1.0.0",
         vendor="Internal (WM AI Platform)",
         description="Extracts structured financial data from unstructured documents (prospectuses, fund fact sheets, investment policy statements)",
-        methodology="RAG pipeline with ChromaDB vector store + GPT-4o structured output (Pydantic) + business rules validation",
+        methodology="RAG pipeline with ChromaDB vector store + GPT-5.2 structured output (Pydantic) + business rules validation",
         model_type="extraction",
         risk_rating=RiskRating.HIGH,
         status=ModelStatus.CERTIFIED,
@@ -181,7 +181,7 @@ MODEL_REGISTRY: list[GovernedModel] = [
         version="1.3.0",
         vendor="Internal (WM Technology)",
         description="Summarizes advisor-client meeting transcripts into structured notes, action items, compliance flags, and draft follow-up emails",
-        methodology="GPT-4o structured output with PII detection (Presidio + regex), compliance rule engine, human-in-the-loop email approval",
+        methodology="GPT-5.2 structured output with PII detection (Presidio + regex), compliance rule engine, human-in-the-loop email approval",
         model_type="summarization",
         risk_rating=RiskRating.HIGH,
         status=ModelStatus.MONITORING,
@@ -246,7 +246,7 @@ MODEL_REGISTRY: list[GovernedModel] = [
         version="1.0.0",
         vendor="Internal (Risk Analytics)",
         description="Generates natural-language risk commentary from structured portfolio analytics for client reports and committee presentations",
-        methodology="Data-to-text generation with GPT-4o structured output + fact-checking layer (verifies all cited numbers against source data)",
+        methodology="Data-to-text generation with GPT-5.2 structured output + fact-checking layer (verifies all cited numbers against source data)",
         model_type="generation",
         risk_rating=RiskRating.MEDIUM,
         status=ModelStatus.CERTIFIED,
@@ -293,7 +293,7 @@ MODEL_REGISTRY: list[GovernedModel] = [
         version="1.0.0",
         vendor="Internal (Compliance)",
         description="Monitors regulatory updates (SEC/FINRA/OCC) and identifies changes impacting WM operations with semantic similarity matching",
-        methodology="Semantic embedding (text-embedding-3-large) + ChromaDB similarity search against WM control catalog + GPT-4o impact analysis",
+        methodology="Semantic embedding (text-embedding-3-large) + ChromaDB similarity search against WM control catalog + GPT-5.2 impact analysis",
         model_type="analysis",
         risk_rating=RiskRating.MEDIUM,
         status=ModelStatus.TESTING,
@@ -327,7 +327,7 @@ MODEL_REGISTRY: list[GovernedModel] = [
         version="1.0.0",
         vendor="Internal (Compliance)",
         description="Pre-send compliance screening for advisor communications — checks for misleading claims, missing disclosures, PII, suitability violations",
-        methodology="GPT-4o classification with structured output + deterministic rule-based checks (promissory language regex, PII patterns) + FINRA 2210 rule engine",
+        methodology="GPT-5.2 classification with structured output + deterministic rule-based checks (promissory language regex, PII patterns) + FINRA 2210 rule engine",
         model_type="classification",
         risk_rating=RiskRating.HIGH,
         status=ModelStatus.CERTIFIED,

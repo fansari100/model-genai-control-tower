@@ -10,7 +10,7 @@ Transforms quantitative risk metrics into human-readable narratives for:
 
 Architecture:
   - Input: Structured portfolio data (JSON: holdings, returns, risk metrics)
-  - Processing: Data-to-text generation with quantitative reasoning (GPT-4o)
+  - Processing: Data-to-text generation with quantitative reasoning (GPT-5.2)
   - Validation: Fact-checking generated numbers against source data
   - Output: Professional risk narrative with citations to source metrics
 """

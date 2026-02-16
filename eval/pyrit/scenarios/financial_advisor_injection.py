@@ -74,7 +74,7 @@ SAFETY_CRITERIA = [
 
 async def run_scenario(
     api_key: str | None = None,
-    model: str = "gpt-4o",
+    model: str = "gpt-5.2",
     output_dir: str = "./results",
 ) -> dict:
     """

@@ -71,8 +71,8 @@ async def seed() -> None:
         await session.flush()
 
         # ── Models ───────────────────────────────────────────
-        gpt4o = Model(
-            name="GPT-4o",
+        gpt52 = Model(
+            name="GPT-5.2",
             version="2024-11-20",
             description="Multimodal LLM – flagship model",
             purpose="General-purpose text generation, analysis, and reasoning",
@@ -82,14 +82,14 @@ async def seed() -> None:
             risk_tier=RiskTier.TIER_2_HIGH,
             owner="AI Platform Team",
             business_unit="Wealth Management",
-            provider_model_id="gpt-4o-2024-11-20",
+            provider_model_id="gpt-5.2-2025-12-11",
             context_window=128000,
             vendor_id=openai.id,
             sr_11_7_classification="Model",
             owasp_llm_risks={"applicable": ["LLM01", "LLM06", "LLM09"]},
         )
         claude = Model(
-            name="Claude Sonnet 4",
+            name="Claude Sonnet 5",
             version="20250514",
             description="Advanced reasoning model with enhanced safety",
             purpose="Complex analysis, summarization, code generation",
@@ -99,7 +99,7 @@ async def seed() -> None:
             risk_tier=RiskTier.TIER_2_HIGH,
             owner="AI Platform Team",
             business_unit="Wealth Management",
-            provider_model_id="claude-sonnet-4-20250514",
+            provider_model_id="claude-sonnet-5-20260110",
             context_window=200000,
             vendor_id=anthropic.id,
         )
@@ -114,7 +114,7 @@ async def seed() -> None:
             owner="AI Platform Team",
             vendor_id=openai.id,
         )
-        session.add_all([gpt4o, claude, embeddings])
+        session.add_all([gpt52, claude, embeddings])
         await session.flush()
 
         # ── Tools / EUCs ─────────────────────────────────────
@@ -224,12 +224,12 @@ async def seed() -> None:
 
         # Link models and tools to use cases
         session.add_all([
-            UseCaseModelLink(use_case_id=assistant.id, model_id=gpt4o.id, role="primary"),
+            UseCaseModelLink(use_case_id=assistant.id, model_id=gpt52.id, role="primary"),
             UseCaseModelLink(use_case_id=assistant.id, model_id=embeddings.id, role="embedder"),
             UseCaseToolLink(use_case_id=assistant.id, tool_id=kb_search.id, purpose="Document retrieval"),
-            UseCaseModelLink(use_case_id=debrief.id, model_id=gpt4o.id, role="primary"),
+            UseCaseModelLink(use_case_id=debrief.id, model_id=gpt52.id, role="primary"),
             UseCaseToolLink(use_case_id=debrief.id, tool_id=crm_tool.id, purpose="Save to Salesforce"),
-            UseCaseModelLink(use_case_id=agent.id, model_id=gpt4o.id, role="primary"),
+            UseCaseModelLink(use_case_id=agent.id, model_id=gpt52.id, role="primary"),
             UseCaseModelLink(use_case_id=agent.id, model_id=embeddings.id, role="embedder"),
             UseCaseToolLink(use_case_id=agent.id, tool_id=kb_search.id, purpose="Knowledge retrieval"),
         ])
@@ -240,9 +240,9 @@ async def seed() -> None:
             eval_type=EvalType.QUALITY_CORRECTNESS,
             status=EvalStatus.COMPLETED,
             use_case_id=assistant.id,
-            model_id=gpt4o.id,
+            model_id=gpt52.id,
             model_provider="openai",
-            model_version="gpt-4o-2024-11-20",
+            model_version="gpt-5.2-2025-12-11",
             started_at=datetime(2026, 2, 10, 10, 0, tzinfo=timezone.utc),
             completed_at=datetime(2026, 2, 10, 10, 15, tzinfo=timezone.utc),
             total_tests=50, passed=48, failed=2, errors=0, pass_rate=0.96,
@@ -253,9 +253,9 @@ async def seed() -> None:
             eval_type=EvalType.RED_TEAM_PROMPTFOO,
             status=EvalStatus.COMPLETED,
             use_case_id=assistant.id,
-            model_id=gpt4o.id,
+            model_id=gpt52.id,
             model_provider="openai",
-            model_version="gpt-4o-2024-11-20",
+            model_version="gpt-5.2-2025-12-11",
             started_at=datetime(2026, 2, 10, 11, 0, tzinfo=timezone.utc),
             completed_at=datetime(2026, 2, 10, 11, 45, tzinfo=timezone.utc),
             total_tests=120, passed=115, failed=5, errors=0, pass_rate=0.958,

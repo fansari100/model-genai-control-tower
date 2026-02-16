@@ -31,7 +31,7 @@ class EvalWorker:
     async def run_promptfoo_eval(
         self,
         config_path: str,
-        provider: str = "openai:gpt-4o",
+        provider: str = "openai:gpt-5.2",
         output_path: str | None = None,
     ) -> dict[str, Any]:
         """
@@ -88,7 +88,7 @@ class EvalWorker:
     async def run_garak_scan(
         self,
         model_type: str = "openai",
-        model_name: str = "gpt-4o",
+        model_name: str = "gpt-5.2",
         probes: str = "all",
         report_prefix: str = "ct_scan",
     ) -> dict[str, Any]:

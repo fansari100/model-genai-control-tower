@@ -15,14 +15,14 @@ description: "Control Tower – GenAI Use Case Evaluation Suite"
 
 # ── Providers (models under test) ────────────────────────────
 providers:
-  - id: openai:gpt-4o
-    label: "GPT-4o (Primary)"
+  - id: openai:gpt-5.2
+    label: "GPT-5.2 (Primary)"
     config:
       temperature: 0
       max_tokens: 2048
 
-  - id: openai:gpt-4o-mini
-    label: "GPT-4o-mini (Cost-optimized)"
+  - id: openai:gpt-5.2-mini
+    label: "GPT-5.2-mini (Cost-optimized)"
     config:
       temperature: 0
       max_tokens: 2048

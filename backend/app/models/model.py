@@ -85,7 +85,7 @@ class Model(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
 
     # Technical details
     provider_model_id: Mapped[str | None] = mapped_column(String(255))
-    # e.g. "gpt-4o-2024-11-20", "claude-sonnet-4-20250514"
+    # e.g. "gpt-5.2-2025-12-11", "claude-sonnet-5-20260110"
     parameter_count: Mapped[int | None] = mapped_column(Integer)
     context_window: Mapped[int | None] = mapped_column(Integer)
     training_cutoff: Mapped[str | None] = mapped_column(String(50))
