@@ -9,6 +9,7 @@ from app.api.v1 import (
     evaluations,
     evidence,
     findings,
+    model_demos,
     models,
     monitoring,
     tools,

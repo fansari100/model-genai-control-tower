@@ -1,0 +1,712 @@
+================================================================================
+ CONTROL TOWER — INTERVIEW REFERENCE GUIDE
+ Model, Tool & GenAI Governance Platform
+ Repository: github.com/fansari100/model-genai-control-tower
+================================================================================
+
+ Prepared for: Morgan Stanley Wealth Management Risk — Model Control Team
+ Final Round In-Person Interviews — February 2026
+ Candidate: Farooq Ansari
+
+================================================================================
+ TABLE OF CONTENTS
+================================================================================
+
+ 1. ELEVATOR PITCH (30 seconds)
+ 2. SYSTEM OVERVIEW (2 minutes)
+ 3. ARCHITECTURE DEEP DIVE (5 minutes)
+ 4. DOMAIN MODEL — WHAT THE SYSTEM GOVERNS
+ 5. THE CERTIFICATION PIPELINE — EFFECTIVE CHALLENGE
+ 6. RISK RATING ENGINE — HOW RISK IS SCORED
+ 7. COMPLIANCE FRAMEWORK MAPPING
+ 8. EVALUATION HARNESS — 3-LAYER TESTING
+ 9. SECURITY & CONTROLS
+ 10. OPERATIONAL MATURITY
+ 11. TECHNOLOGY STACK
+ 12. HOW THIS MAPS TO THE JOB DESCRIPTION
+ 13. ANTICIPATED ED QUESTIONS & ANSWERS
+ 14. FILE-BY-FILE WALKTHROUGH
+
+================================================================================
+ 1. ELEVATOR PITCH (30 seconds)
+================================================================================
+
+"I built a complete governance platform called Control Tower that maintains
+an inventory of all WM models, non-model tools, and GenAI use cases; runs
+automated certification testing including red-teaming and vulnerability
+scanning; enforces policy-as-code approval gates; and produces audit-grade
+certification evidence packs with tamper-evident hash chains. It implements
+SR 11-7, NIST AI 600-1, OWASP LLM Top 10, OWASP Agentic Top 10, and
+FINRA GenAI control expectations. All 12 CI pipeline jobs are green.
+The repo is public at github.com/fansari100/model-genai-control-tower."
+
+================================================================================
+ 2. SYSTEM OVERVIEW (2 minutes)
+================================================================================
+
+Control Tower is a unified control plane that addresses the three governance
+mandates of the WM Model Control team:
+
+  (1) MODEL INVENTORY: Tracks all WM models (statistical, ML, LLM, vendor
+      models) and Bank-impacting models with risk tiering, status lifecycle,
+      and vendor due diligence.
+
+  (2) GENAI USE CASE GOVERNANCE: Manages the full lifecycle of GenAI
+      applications — from intake and risk assessment through testing,
+      approval, monitoring, and recertification.
+
+  (3) TOOL/EUC INVENTORY: Inventories non-model tools (Excel calculators,
+      VBA macros, scripts, dashboards) with attestation workflows — mirroring
+      the ClusterSeven IMS mandate referenced in public Model Control
+      job postings.
+
+The system produces a CERTIFICATION EVIDENCE PACK — an 8-section PDF
+document containing the risk assessment, test results, OWASP mapping,
+findings register, approval record, and monitoring plan. This is the
+artifact the Model Control team presents to risk committees.
+
+SCALE: 167 source files, ~16,000 lines of code, 12/12 CI jobs green.
+
+================================================================================
+ 3. ARCHITECTURE DEEP DIVE (5 minutes)
+================================================================================
+
+The system is organized into 5 PLANES — each with a distinct responsibility:
+
+  ┌──────────────────────────────────────────────────────────────┐
+  │                     CONTROL TOWER                            │
+  ├─────────┬──────────┬──────────┬───────────┬─────────────────┤
+  │ CONTROL │ EVAL     │ RUNTIME  │ EVIDENCE  │ POLICY          │
+  │ PLANE   │ PLANE    │ PLANE    │ PLANE     │ PLANE           │
+  │         │          │          │           │                 │
+  │ FastAPI │ promptfoo│ OTel     │ MinIO/S3  │ OPA/Rego        │
+  │ Temporal│ PyRIT    │ Phoenix  │ SHA-256   │ Approval gates  │
+  │ Postgres│ garak    │ Prometheus│ Hash chain│ Agent controls  │
+  └─────────┴──────────┴──────────┴───────────┴─────────────────┘
+
+CONTROL PLANE (backend/app/api/)
+  - FastAPI REST API with 11 route modules
+  - 14 PostgreSQL tables via SQLAlchemy ORM
+  - Temporal workflow orchestration for certification lifecycle
+  - JWT/OIDC authentication via Keycloak with 6 RBAC roles
+
+EVALUATION PLANE (eval/)
+  - promptfoo: quality assertions + adversarial red-teaming
+  - PyRIT (Microsoft): systematic GenAI security scenarios
+  - garak (NVIDIA): LLM vulnerability scanning
+  - Operational controls verification (FINRA-aligned)
+
+RUNTIME PLANE (observability)
+  - OpenTelemetry traces → Phoenix for LLM tracing
+  - Prometheus metrics → Grafana dashboards
+  - Structured JSON logging (structlog) for Splunk ingestion
+  - Request ID correlation + latency tracking
+
+EVIDENCE PLANE (backend/app/services/evidence.py)
+  - Content-addressed storage: artifact_hash = SHA-256(content)
+  - Hash chain: chain_hash = SHA-256(content_hash + previous_chain_hash)
+  - MinIO/S3 with Object Lock (WORM) for regulatory retention
+  - 7-year retention for regulatory artifacts
+
+POLICY PLANE (policies/opa/)
+  - 4 Rego policies evaluated by Open Policy Agent
+  - Approval gates: risk-tier-based pass rate thresholds
+  - Data classification: destination allowlists per data class
+  - Agent controls: tool allowlists, memory limits, kill switch
+  - Tool permissions: role-based access with approval requirements
+
+WHY THIS ARCHITECTURE:
+  "Each plane can be audited independently. The Policy Plane makes
+  governance decisions in code, not in someone's head. The Evidence Plane
+  provides mathematical proof of integrity via cryptographic hash chains.
+  This is what SR 11-7 means by 'effective challenge' — a repeatable,
+  auditable process."
+
+================================================================================
+ 4. DOMAIN MODEL — WHAT THE SYSTEM GOVERNS
+================================================================================
+
+14 database tables across 4 entity groups:
+
+INVENTORY ENTITIES (what we track):
+  • Vendor — third-party model/service providers (OpenAI, Anthropic, etc.)
+    Fields: name, security_posture, SLA, certifications, red-team due diligence
+  • Model — statistical, ML, LLM, multimodal models
+    Fields: type, deployment, status (7-state FSM), risk_tier, AIBOM reference
+  • Tool — non-model EUCs (spreadsheets, VBA, scripts, agent tools)
+    Fields: category, criticality, attestation dates, agent_tool_config
+  • GenAIUseCase — governed GenAI applications
+    Fields: category, risk_rating, data_classification, architecture flags
+    (uses_rag, uses_agents, uses_tools, uses_memory, requires_human_in_loop)
+
+LIFECYCLE ENTITIES (what happens during certification):
+  • EvaluationRun — a test execution (type, status, pass_rate, OWASP results)
+  • EvaluationResult — individual test case results within a run
+  • Finding — issues discovered (severity, OWASP risk ID, remediation tracking)
+  • Approval — governance gate decisions (tamper-evident SHA-256 hash)
+  • MonitoringPlan — ongoing monitoring config (canaries, thresholds, alerts)
+  • MonitoringExecution — individual monitoring check results
+
+SUPPORT ENTITIES:
+  • Dataset — golden test sets, retrieval corpora
+  • Issue — audit/regulatory issues linked to findings
+  • EvidenceArtifact — immutable, content-addressed, hash-chained artifacts
+
+ASSOCIATION TABLES:
+  • UseCaseModelLink — which models a use case uses (with role: primary/fallback)
+  • UseCaseToolLink — which tools a use case invokes (with permission scope)
+
+BUSINESS CONTEXT:
+  "This data model directly mirrors what Model Control manages. The Vendor
+  and Model entities are the model inventory. The Tool entity is the EUC
+  inventory managed via ClusterSeven IMS. The GenAIUseCase entity is the
+  GenAI application governance layer. Every entity has JSONB columns for
+  NIST, OWASP, and MITRE ATLAS framework mappings."
+
+================================================================================
+ 5. THE CERTIFICATION PIPELINE — EFFECTIVE CHALLENGE
+================================================================================
+
+SR 11-7 defines model risk management as requiring "effective challenge" —
+critical analysis by objective, informed parties. The Control Tower
+certification pipeline operationalizes this as a 5-stage workflow:
+
+  STAGE 0: INTAKE & CLASSIFICATION
+    Input: Use case description, model/provider list, data classification,
+           architecture flags (RAG, agents, tools, memory)
+    Output: Risk rating, required test suites, committee path, OWASP risks
+    Code: backend/app/services/risk_rating.py
+    API: POST /api/v1/use-cases/intake
+
+  STAGE 1: DOCUMENTATION PACK GENERATION
+    Auto-generates: purpose, scope, limitations, data lineage, AIBOM,
+                    tooling map, vendor description
+    Code: backend/app/services/aibom.py, model_card.py
+
+  STAGE 2: PRE-DEPLOYMENT TESTING
+    Quality & Correctness: golden prompt suite, regression, LLM-rubric
+    Safety & Security: prompt injection, PII leakage, jailbreak, hallucination
+    RAG Groundedness: faithfulness, relevance, context precision
+    Agentic Safety: goal hijack, tool misuse, RCE, memory poisoning
+    Operational Controls: logging active? version tracked? HITL enforced?
+    Code: eval/promptfoo/, eval/pyrit/, eval/garak/
+    Temporal activities: workflows/temporal/activities/evaluation.py
+
+  STAGE 3: APPROVAL GATE
+    OPA policy decides: approve / conditional / reject based on:
+      - Risk rating vs test pass rate threshold
+      - Open critical/high findings
+      - Required mitigations completed
+    Human approval via Temporal signal (wait_condition with timeout)
+    Code: policies/opa/approval_gates.rego
+    Temporal: workflows/temporal/workflows/certification.py
+
+  STAGE 4: MONITORING & RECERTIFICATION
+    Canary prompt replay against live LLM endpoint
+    Threshold-based drift detection
+    Automatic recertification triggers on:
+      - Model version change
+      - Prompt template change
+      - Retrieval corpus change
+      - Tool permission expansion
+      - New agent capability
+    Code: backend/app/workers/monitoring_worker.py
+
+  CERTIFICATION PACK OUTPUT (8 sections):
+    1. Use Case Summary & Risk Assessment
+    2. NIST AI 600-1 GenAI Profile Compliance
+    3. OWASP LLM Top 10 & Agentic Top 10 Mapping
+    4. Pre-Deployment Testing Results
+    5. Findings Register
+    6. Governance Approval Record
+    7. Ongoing Monitoring Plan
+    8. ISO/IEC 42001 PDCA Lifecycle Mapping
+
+  Code: backend/app/api/v1/certifications.py (JSON + PDF endpoints)
+  PDF: backend/app/utils/pdf_generator.py (ReportLab)
+
+WHAT TO SAY:
+  "The certification pipeline is the core of the system. It enforces
+  'effective challenge' as defined by SR 11-7 — not as a manual process,
+  but as a repeatable, auditable, policy-enforced workflow. Every stage
+  produces evidence that's content-addressed and hash-chained."
+
+================================================================================
+ 6. RISK RATING ENGINE — HOW RISK IS SCORED
+================================================================================
+
+File: backend/app/services/risk_rating.py
+
+METHODOLOGY: Weighted factor scoring model.
+
+FACTORS AND WEIGHTS:
+  Data classification:  PUBLIC=0, INTERNAL=10, CONFIDENTIAL=25, PII=40, RESTRICTED=50
+  Handles PII:          True=30, False=0
+  Client-facing:        True=35, False=0
+  Uses agents:          True=30, False=0
+  Uses tools:           True=20, False=0
+  Uses memory:          True=15, False=0
+  Uses RAG:             True=10, False=0
+  Category:             AGENT_WORKFLOW=25, CODE_GEN=20, CONTENT_GEN=15, SUMMARIZATION=10, etc.
+
+SCORE → RATING THRESHOLDS:
+  ≥150 → CRITICAL    (e.g., PII + client-facing + agents + tools + memory)
+  ≥100 → HIGH        (e.g., confidential + client-facing + RAG)
+  ≥50  → MEDIUM      (e.g., internal + tools)
+  ≥20  → LOW
+  ≥0   → MINIMAL
+
+EXAMPLE — "Debrief Meeting Summarizer":
+  PII data (40) + handles_pii (30) + client_facing (35) + uses_tools (20)
+  + SUMMARIZATION category (10) = 135 → HIGH risk
+  Required: 7 test suites, 3 approvers, WM MRC → Enterprise RC
+
+EXAMPLE — "Research Agent":
+  CONFIDENTIAL (25) + uses_agents (30) + uses_tools (20) + uses_memory (15)
+  + uses_rag (10) + AGENT_WORKFLOW (25) = 125 → HIGH (near CRITICAL)
+  Required: 9 test suites including agentic_safety + PyRIT + garak
+
+WHAT TO SAY:
+  "The risk rating is deterministic and auditable. Given the same inputs,
+  it always produces the same score. The score determines exactly which
+  test suites are required, which approvers must sign off, and which
+  committee path the use case follows. There's no subjectivity."
+
+================================================================================
+ 7. COMPLIANCE FRAMEWORK MAPPING
+================================================================================
+
+File: backend/app/services/compliance_mapping.py
+UI: frontend/src/app/compliance/page.tsx
+API: GET /api/v1/dashboard/compliance-matrix
+
+7 FRAMEWORKS MAPPED:
+
+SR 11-7 / OCC:
+  • Model Definition → Model entity (type, purpose, I/O, limitations)
+  • Effective Challenge → 5-stage certification pipeline
+  • Governance → Risk-tier committee paths + tamper-evident approvals
+  • Ongoing Monitoring → Canary prompts + threshold drift + recertification
+
+NIST AI 600-1 (GenAI Profile):
+  • Governance → RBAC, OPA approval gates, committee routing
+  • Content Provenance → Mandatory citations, dataset SHA-256, AIBOM
+  • Pre-deployment Testing → 3-layer eval (promptfoo + PyRIT + garak)
+  • Incident Disclosure → Finding → Issue escalation + alert routing
+
+OWASP LLM Top 10 (2025):
+  • LLM01 Prompt Injection → Cascade guardrails + 20+ red-team tests
+  • LLM06 Sensitive Disclosure → Presidio PII redaction + OPA data rules
+  • LLM07 Excessive Agency → Tool allowlists + human approval gates
+  • LLM08 Data Poisoning → AIBOM + corpus versioning + provenance
+  • LLM09 Misinformation → RAG groundedness evals + mandatory citations
+  (+ LLM02, LLM04 also mapped)
+
+OWASP Agentic Top 10 (2026):
+  • ASI01 Agent Goal Hijack → System prompt hardening + drift evals
+  • ASI02 Tool Misuse → OPA tool_permissions.rego + schema validation
+  • ASI03 Privilege Abuse → Scoped credentials + IRSA
+  • ASI05 RCE → OPA blocks eval/exec/subprocess patterns
+  • ASI06 Memory Poisoning → TTL + provenance + write count limits
+  • ASI08 Cascading Failures → Circuit breakers + bounded retries
+  • ASI10 Rogue Agents → Agent registry + kill switch
+
+ISO/IEC 42001:
+  • PDCA lifecycle tracked on every use case (Plan→Do→Check→Act)
+  • Dashboard visualizes the PDCA distribution
+
+MITRE ATLAS:
+  • Technique IDs on Model and Finding entities (AML.T0020, AML.T0051, etc.)
+
+FINRA GenAI Controls:
+  • Prompt/output logging with PII redaction
+  • Model version stamped on every evaluation run
+  • Monitoring for agentic AI adoption
+
+WHAT TO SAY:
+  "Every compliance requirement is mapped to a specific control in the
+  system. This isn't a spreadsheet — it's executable compliance. The
+  OPA policies enforce it at runtime. The compliance matrix page shows
+  the complete mapping for audit review."
+
+================================================================================
+ 8. EVALUATION HARNESS — 3-LAYER TESTING
+================================================================================
+
+LAYER 1: promptfoo (Quality + Red-team)
+  Config: eval/promptfoo/promptfooconfig.yaml
+  12 test cases:
+    - 4 quality/correctness (portfolio Q&A, summarization faithfulness)
+    - 5 safety/security (injection, PII leakage, hallucination, harmful advice)
+    - 2 operational controls (citation requirement, scope boundary)
+    - 1 out-of-scope boundary test
+  Red-team config: eval/promptfoo/redteam/redteam_config.yaml
+    - 15 attack plugins (prompt-injection, PII, jailbreak, excessive-agency,
+      hallucination, harmful, cross-session-leak)
+    - 7 delivery strategies (basic, multilingual, leetspeak, rot13, base64)
+
+LAYER 2: PyRIT (Microsoft Security)
+  Scenario: eval/pyrit/scenarios/financial_advisor_injection.py
+  10 attack vectors:
+    - Direct injection, context manipulation, role-play
+    - Authority impersonation, encoding attack, prompt leaking
+    - Goal hijacking, data exfiltration via formatting
+  Scoring: Self-ask true/false scorer via target LLM
+
+LAYER 3: garak (NVIDIA Vulnerability)
+  Config: eval/garak/presets/ct_full_scan.yaml
+  14 probe categories:
+    - promptinject (3 variants), leakreplay (2), snowball (3)
+    - encoding (3), realtoxicityprompts (2), xss (1)
+
+WHAT TO SAY:
+  "We don't rely on a single tool. promptfoo handles quality and red-teaming
+  at scale. PyRIT provides systematic security scenario orchestration from
+  Microsoft Research. garak covers the OWASP vulnerability categories that
+  the other tools miss. Three independent evaluation layers is the SOTA
+  standard for GenAI governance."
+
+================================================================================
+ 9. SECURITY & CONTROLS
+================================================================================
+
+AUTHENTICATION:
+  - Keycloak OIDC with RS256 JWKS verification (backend/app/auth.py)
+  - 6 RBAC roles: admin, model_risk_officer, model_control_analyst,
+    business_line_head, auditor, developer
+  - Route-level authorization: require_approver, require_write, require_admin
+
+SECRETS:
+  - HashiCorp Vault integration (backend/app/security/vault.py)
+  - Kubernetes service account auth, KV v2, Transit encryption
+  - Dynamic database credentials with auto-rotation
+
+GUARDRAILS (Cascade Architecture):
+  - Stage 1: Fast regex/keyword probes (injection, PII, toxicity)
+  - Stage 2: OpenAI Moderation API for ML-based classification
+  - Escalation: suspicious → heavy classifier → human review
+  - Fail-closed in production when Moderation API unavailable
+  Code: backend/app/services/guardrails.py
+
+NETWORK:
+  - Istio mTLS between all services (security/tls/istio_mtls.yaml)
+  - Kubernetes NetworkPolicy (ingress from nginx only, egress restricted)
+  - AWS WAF v2 (managed rules + rate limiting + geo-restrict)
+
+DATA:
+  - Row-Level Security on 7 PostgreSQL tables (business_unit isolation)
+  - 15 performance indexes on hot query paths
+  - KMS encryption at rest for RDS, S3, Kafka
+  - PII redaction via Microsoft Presidio (ML-based NER)
+
+AUDIT:
+  - 40+ typed audit event types → Kafka (acks=all, idempotent)
+  - SHA-256 event hashing for tamper evidence
+  - Structured JSON logging for Splunk ingestion
+  Code: backend/app/services/audit_events.py
+
+SAST/SCA:
+  - Snyk (dependency vulnerabilities) — Python + Node
+  - Trivy (container image CVEs) — Backend + Frontend
+  - Bandit (Python SAST)
+  - Semgrep (multi-language pattern matching)
+  - All 7 SAST jobs green in CI
+
+================================================================================
+ 10. OPERATIONAL MATURITY
+================================================================================
+
+DEPLOYMENT:
+  - Terraform: VPC, EKS, Aurora PG17, S3 (WORM), MSK Kafka, KMS, WAF, ECR, IAM
+  - Helm: multi-region, HPA (3→20 replicas), PDB, topology spread, Istio
+  - Docker: multi-stage builds with uv (SOTA Python package manager)
+  Files: deploy/terraform/, deploy/helm/
+
+SLOs (ops/slos/slo_definitions.yaml):
+  - API availability: 99.95% (21.6 min/month error budget)
+  - API latency p99: <2 seconds
+  - Evaluation completion: 99%
+  - Evidence integrity: 100% (zero tolerance)
+  - Canary pass rate: 95%
+  - Audit event delivery: 99.99%
+
+INCIDENT RESPONSE:
+  - PagerDuty routing with severity-based SLAs (ops/alerting/)
+  - 3 runbooks: API latency, evidence integrity (P1), disaster recovery
+  - DR plan: RPO 1h / RTO 4h, 4 scenario playbooks, semi-annual testing
+
+SOC2 (ops/slos/sox_soc2_controls.yaml):
+  - 15 controls across CC1-CC9 Trust Service Criteria
+  - Each mapped to implementation + evidence source
+
+TESTING:
+  - Unit: 4 test files (risk rating, guardrails, evidence, API)
+  - Integration: full certification pipeline end-to-end
+  - Load: k6 with 4 profiles (smoke, load, stress, soak)
+  - E2E: Playwright across all 11 frontend pages
+
+================================================================================
+ 11. TECHNOLOGY STACK
+================================================================================
+
+BACKEND:       Python 3.13, FastAPI, SQLAlchemy 2, Pydantic v2, Alembic
+FRONTEND:      Next.js 15, React 19, TypeScript 5.7, Tailwind CSS 4.0
+DATABASE:      PostgreSQL 17 + pgvector, Row-Level Security
+WORKFLOW:      Temporal (certification lifecycle with human-in-the-loop signals)
+POLICY:        Open Policy Agent + Rego (4 policies)
+EVIDENCE:      MinIO/S3, SHA-256 content addressing, hash chains, WORM
+EVENTS:        Kafka/Redpanda (audit event stream, acks=all, idempotent)
+AUTH:          Keycloak (OIDC/JWT), 6 RBAC roles, JWKS verification
+SECRETS:       HashiCorp Vault (KV v2, Transit, dynamic DB credentials)
+OBSERVABILITY: OpenTelemetry, Arize Phoenix, Prometheus, Grafana, structlog
+EVAL:          promptfoo, PyRIT (Microsoft), garak (NVIDIA), TruLens
+SECURITY:      Istio mTLS, AWS WAF v2, Presidio PII, Snyk, Trivy, Bandit, Semgrep
+DEPLOYMENT:    Terraform (AWS), Helm (K8s), Docker (multi-stage, uv)
+CI/CD:         GitHub Actions (12 jobs: lint, test, build, SAST, eval, scan)
+INTEGRATIONS:  ServiceNow, Salesforce, LDAP/AD, ClusterSeven IMS
+
+================================================================================
+ 12. HOW THIS MAPS TO THE JOB DESCRIPTION
+================================================================================
+
+JD: "Oversees the model inventory for all WM models as well as Bank models"
+→ Model entity + Vendor entity + full CRUD API + inventory UI page
+
+JD: "Governance and oversight of the division's GenAI application and usages"
+→ GenAIUseCase entity + intake workflow + certification pipeline + monitoring
+
+JD: "Assist in documentation and certification of vendor models"
+→ Certification pack generator (8-section PDF) + AIBOM + Model Cards
+
+JD: "Design and execute testing plans"
+→ 3-layer eval harness with configs, 12+ test cases, red-team scenarios
+
+JD: "Analyze test results, identify potential issues, communicate findings"
+→ EvaluationRun/Result entities + Finding entity + findings register UI
+
+JD: "Develop ongoing monitoring plan, perform ongoing monitoring"
+→ MonitoringPlan + canary prompts + threshold drift + recertification triggers
+
+JD: "Conduct risk assessment on GenAI use cases"
+→ Weighted risk scoring engine + OWASP/NIST risk identification
+
+JD: "Ensure compliance with firm policies and regulatory expectations"
+→ 7 compliance frameworks mapped to specific controls
+
+JD: "Develop and maintain documentation and reporting for GenAI use case
+     lifecycle management, including validation, monitoring, and issue escalation"
+→ Certification packs + committee report API + dashboard + issue escalation
+
+================================================================================
+ 13. ANTICIPATED ED QUESTIONS & ANSWERS
+================================================================================
+
+Q: "How do you handle vendor model governance specifically?"
+A: "The Vendor entity tracks security posture, SLA, certifications, and
+    red-team due diligence. Each model links to its vendor. The AIBOM
+    generator produces CycloneDX supply-chain transparency documents.
+    The certification pipeline runs all testing against the vendor's
+    model endpoint."
+
+Q: "What about non-model tools like Excel calculators?"
+A: "The Tool entity supports 9 categories including EUC spreadsheets,
+    VBA macros, scripts, and dashboards. Each has an attestation
+    workflow with configurable frequency. The ClusterSeven IMS adapter
+    bidirectionally syncs the inventory. The tools page shows
+    attestation status: attested, due, overdue."
+
+Q: "How do you prevent prompt injection in GenAI systems?"
+A: "Three layers. Stage 1: fast regex probes catch known patterns at
+    <1ms latency. Stage 2: the OpenAI Moderation API provides ML-based
+    classification for anything suspicious. Stage 3: human escalation.
+    This cascade architecture minimizes latency while maintaining >99%
+    detection. We also run 20+ injection tests via promptfoo and 10
+    attack scenarios via PyRIT in the pre-deployment testing stage."
+
+Q: "How do you ensure the audit trail can't be tampered with?"
+A: "Every evidence artifact is content-addressed: artifact_id = SHA-256
+    of the content. Each artifact's hash is chained to the previous one:
+    chain_hash = SHA-256(content_hash + previous_chain_hash). Any
+    modification breaks the chain. Artifacts are stored in S3 with
+    Object Lock (WORM) — physically cannot be deleted for 7 years.
+    The verify endpoint re-downloads and re-hashes to confirm integrity."
+
+Q: "What about agentic AI risks — agents calling tools autonomously?"
+A: "The OPA agent_controls policy enforces tool allowlists (only 7
+    approved tools), blocks dangerous patterns (eval, exec, subprocess),
+    limits memory writes to 10 per turn with provenance requirements,
+    limits tool calls to 5 per turn, and checks a kill switch before
+    every action. These map directly to OWASP Agentic Top 10 2026:
+    ASI01 through ASI10."
+
+Q: "How does this comply with FINRA's GenAI expectations?"
+A: "Three specific controls. First, every evaluation captures the full
+    prompt and output with PII redacted via Presidio. Second, every
+    evaluation records model_provider, model_version, and
+    prompt_template_hash. Third, the monitoring system specifically
+    tracks agentic features — tool calls, memory usage, agent
+    registration. These are the three areas FINRA has highlighted."
+
+Q: "How would you deploy this in production at a bank?"
+A: "Terraform provisions the AWS infrastructure: VPC, EKS, Aurora
+    PostgreSQL 17, S3 with WORM Object Lock, MSK Kafka, KMS encryption.
+    Helm deploys the application onto EKS with autoscaling, PDB, and
+    Istio mTLS. Vault manages all secrets with dynamic credentials.
+    The CI pipeline gates every deployment with lint, test, SAST, and
+    container scanning — all 12 jobs must pass."
+
+Q: "What if a model version changes — how do you catch drift?"
+A: "The monitoring plan includes recertification triggers. When the model
+    version changes, the system automatically triggers recertification —
+    which re-runs the full testing suite. The canary prompts detect
+    behavioral drift between versions. If the canary pass rate drops
+    below the threshold, an alert fires to the MRO via PagerDuty."
+
+================================================================================
+ 14. FILE-BY-FILE WALKTHROUGH
+================================================================================
+
+backend/app/main.py                    — FastAPI application factory, middleware, lifespan
+backend/app/config.py                  — Settings from env/Vault, all service configs
+backend/app/database.py                — Async SQLAlchemy engine, session factory
+backend/app/auth.py                    — JWT/OIDC auth, JWKS verification, RBAC roles
+
+backend/app/models/                    — 14 SQLAlchemy ORM models (domain entities)
+  vendor.py                            — Vendor: security posture, due diligence
+  model.py                             — Model: type, deployment, 7-state status FSM
+  tool.py                              — Tool/EUC: category, criticality, attestation
+  genai_use_case.py                    — GenAI use case: risk rating, architecture flags
+  evaluation.py                        — EvaluationRun + EvaluationResult
+  finding.py                           — Finding: severity, OWASP mapping, remediation
+  approval.py                          — Approval: tamper-evident SHA-256 hash
+  monitoring.py                        — MonitoringPlan + MonitoringExecution
+  evidence.py                          — EvidenceArtifact: content-addressed, hash-chained
+  dataset.py                           — Dataset: golden sets, retrieval corpora
+  issue.py                             — Issue: audit/regulatory issue tracking
+
+backend/app/api/v1/                    — 11 API route modules
+  vendors.py                           — CRUD + search
+  models.py                            — CRUD + status transition FSM
+  tools.py                             — CRUD + attestation workflow
+  use_cases.py                         — CRUD + intake (risk rating)
+  evaluations.py                       — CRUD + trigger (Temporal dispatch)
+  findings.py                          — CRUD with severity/status filtering
+  approvals.py                         — Create (tamper hash) + list (require_approver)
+  evidence.py                          — Upload, verify integrity, presigned download
+  monitoring.py                        — Plan CRUD + execute (real worker)
+  certifications.py                    — Generate JSON pack + PDF download
+  dashboard.py                         — Summary, committee report, compliance matrix
+
+backend/app/services/                  — Business logic layer
+  risk_rating.py                       — Weighted factor scoring engine
+  evidence.py                          — SHA-256 hashing, hash chain construction
+  storage.py                           — MinIO/S3 client (upload, download, verify)
+  audit_events.py                      — 40+ typed events → Kafka (acks=all)
+  policy.py                            — OPA REST client (4 policy checks)
+  guardrails.py                        — Cascade: regex → OpenAI Moderation → human
+  aibom.py                             — CycloneDX 1.6 AIBOM generator
+  model_card.py                        — Markdown Model Card generator
+  compliance_mapping.py                — 7-framework control mapping tables
+  
+backend/app/security/                  — Security subsystem
+  vault.py                             — HashiCorp Vault (KV v2, Transit, dynamic creds)
+  feature_flags.py                     — LaunchDarkly/ConfigMap/env feature flags
+
+backend/app/integrations/              — External platform adapters
+  servicenow.py                        — Incidents + Change Requests
+  salesforce.py                        — Activity + Task (Debrief write-back)
+  ldap_ad.py                           — User lookup, group membership, manager chain
+  clusterseven.py                      — EUC sync, attestation trigger, inventory export
+
+backend/app/workers/                   — Background workers
+  eval_worker.py                       — promptfoo/garak subprocess execution
+  monitoring_worker.py                 — Canary replay against live LLM endpoint
+
+backend/app/utils/                     — Utility modules
+  hashing.py                           — SHA-256 utilities
+  pii_redaction.py                     — Presidio ML NER + regex fallback
+  pdf_generator.py                     — ReportLab certification pack PDF
+  otel.py                              — OpenTelemetry TracerProvider setup
+  logging.py                           — structlog JSON (prod) / console (dev)
+
+backend/tests/                         — Test suite
+  test_risk_rating.py                  — Risk scoring correctness + OWASP identification
+  test_guardrails.py                   — Injection/PII/toxicity detection + cascade
+  test_evidence.py                     — Hash determinism, chain integrity
+  test_api.py                          — Health, CRUD, intake, dashboard
+  integration/test_certification_pipeline.py — Full pipeline end-to-end
+  load/k6_api_load.js                  — 4-profile load test (smoke/load/stress/soak)
+  e2e/playwright_e2e.spec.ts           — 10 E2E tests across all pages
+
+workflows/temporal/                    — Certification workflow orchestration
+  workflows/certification.py           — 5-stage pipeline with human approval signal
+  activities/evaluation.py             — 5 eval activities (quality/security/RAG/agentic/controls)
+  activities/evidence.py               — Store artifact + generate cert pack
+  activities/notification.py           — Slack webhook + SMTP email dispatch
+  worker.py                            — Temporal worker registration
+
+policies/opa/                          — Policy-as-code (Rego)
+  approval_gates.rego                  — Risk-tier pass rate thresholds
+  data_classification.rego             — Destination allowlists per data class
+  agent_controls.rego                  — Tool allowlist, memory limits, kill switch
+  tool_permissions.rego                — Role-based tool access matrix
+
+eval/promptfoo/                        — Evaluation configs
+  promptfooconfig.yaml                 — 12 test cases across 4 categories
+  redteam/redteam_config.yaml          — 15 plugins × 7 strategies
+  prompts/assistant_qa.txt             — WM Q&A system prompt
+  prompts/debrief_summarizer.txt       — Meeting summarizer system prompt
+
+eval/pyrit/scenarios/                  — Security scenarios
+  financial_advisor_injection.py       — 10 injection attack vectors
+
+eval/garak/presets/                    — Vulnerability scanning
+  ct_full_scan.yaml                    — 14 probe categories
+
+deploy/terraform/                      — AWS infrastructure
+  main.tf                              — VPC, EKS, Aurora PG17, S3, MSK, KMS, WAF, ECR, IAM
+  variables.tf                         — Configurable parameters
+  outputs.tf                           — Values for Helm consumption
+  environments/dev.tfvars              — Dev (cost-optimized)
+  environments/prod.tfvars             — Prod (HA)
+
+deploy/helm/control-tower/             — Kubernetes deployment
+  Chart.yaml                           — Helm chart metadata
+  values.yaml                          — Multi-region, HPA, PDB, Vault, ingress
+  templates/backend-deployment.yaml    — Pod spec with security context
+
+frontend/src/app/                      — 11 Next.js pages
+  dashboard/page.tsx                   — 8 stat cards, PDCA lifecycle, compliance badges
+  models/page.tsx                      — Model inventory table
+  tools/page.tsx                       — Tool/EUC attestation management
+  use-cases/page.tsx                   — Pipeline funnel + card view
+  evaluations/page.tsx                 — Pass rate bars + OWASP type tags
+  findings/page.tsx                    — Severity breakdown + finding cards
+  certifications/page.tsx              — Pack viewer + PDF download
+  compliance/page.tsx                  — Full 7-framework control matrix
+  settings/page.tsx                    — System status
+
+ops/                                   — Operational configs
+  slos/slo_definitions.yaml            — 6 SLOs with error budgets
+  slos/sox_soc2_controls.yaml          — 15 SOC2 controls (CC1-CC9)
+  alerting/pagerduty_rules.yaml        — 6 routing rules + on-call schedule
+  runbooks/api_high_latency.yaml       — Diagnosis + remediation + escalation
+  runbooks/evidence_integrity_failure.yaml — P1 + regulatory disclosure
+  runbooks/disaster_recovery.yaml      — RPO 1h / RTO 4h, 4 scenarios
+
+.github/workflows/                     — CI/CD pipelines
+  ci.yml                               — Lint + test + build + OPA + Docker (5 jobs)
+  security-sast.yml                    — Snyk + Trivy + Bandit + Semgrep + OPA (7 jobs)
+  eval.yml                             — Scheduled promptfoo quality + red-team
+  security-scan.yml                    — On-demand garak + PyRIT
+
+================================================================================
+ END OF REFERENCE GUIDE
+================================================================================
+
+ Repository: github.com/fansari100/model-genai-control-tower
+ CI Status: 12/12 jobs green
+ Files: 167 | Python: 11,072 LOC | TypeScript: 2,069 LOC | Rego: 437 LOC
+ Terraform: 692 LOC | YAML: 2,083 LOC | Total: ~16,353 LOC
+
+================================================================================

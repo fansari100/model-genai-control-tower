@@ -57,3 +57,4 @@ eval/sample-data/cert-packs/
 # ── OS ───────────────────────────────────────
 .DS_Store
 Thumbs.db
+backend/app/services/local_config.py

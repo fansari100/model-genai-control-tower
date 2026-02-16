@@ -10,12 +10,11 @@ import {
   Sparkles,
   FlaskConical,
   AlertTriangle,
-  CheckCircle2,
   FileCheck2,
-  Activity,
   Shield,
   Settings,
   ShieldCheck,
+  Play,
 } from "lucide-react";
 
 const navigation = [
@@ -27,6 +26,7 @@ const navigation = [
   { name: "Findings", href: "/findings", icon: AlertTriangle },
   { name: "Certifications", href: "/certifications", icon: FileCheck2 },
   { name: "Compliance Matrix", href: "/compliance", icon: ShieldCheck },
+  { name: "Live Model Demo", href: "/demo", icon: Play },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
