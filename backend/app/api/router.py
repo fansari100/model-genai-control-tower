@@ -30,3 +30,4 @@ api_router.include_router(approvals.router, prefix="/approvals", tags=["Approval
 api_router.include_router(evidence.router, prefix="/evidence", tags=["Evidence"])
 api_router.include_router(monitoring.router, prefix="/monitoring", tags=["Monitoring"])
 api_router.include_router(certifications.router, prefix="/certifications", tags=["Certifications"])
+api_router.include_router(model_demos.router, prefix="/model-demos", tags=["GenAI Model Demos"])

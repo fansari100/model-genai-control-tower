@@ -12,14 +12,13 @@ Each model entry contains:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
-class ModelStatus(str, Enum):
+class ModelStatus(StrEnum):
     DRAFT = "draft"
     INTAKE = "intake"
     TESTING = "testing"
@@ -31,7 +30,7 @@ class ModelStatus(str, Enum):
     RETIRED = "retired"
 
 
-class RiskRating(str, Enum):
+class RiskRating(StrEnum):
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -137,14 +136,40 @@ MODEL_REGISTRY: list[GovernedModel] = [
             finra=["Prompt/output logging", "Model version tracking"],
         ),
         eval_results=[
-            EvalResult(eval_type="quality_correctness", total_tests=25, passed=24, failed=1, pass_rate=0.96, date="2026-01-10"),
-            EvalResult(eval_type="safety_security", total_tests=30, passed=29, failed=1, pass_rate=0.967, date="2026-01-12"),
-            EvalResult(eval_type="rag_groundedness", total_tests=20, passed=19, failed=1, pass_rate=0.95, date="2026-01-11"),
+            EvalResult(
+                eval_type="quality_correctness",
+                total_tests=25,
+                passed=24,
+                failed=1,
+                pass_rate=0.96,
+                date="2026-01-10",
+            ),
+            EvalResult(
+                eval_type="safety_security",
+                total_tests=30,
+                passed=29,
+                failed=1,
+                pass_rate=0.967,
+                date="2026-01-12",
+            ),
+            EvalResult(
+                eval_type="rag_groundedness",
+                total_tests=20,
+                passed=19,
+                failed=1,
+                pass_rate=0.95,
+                date="2026-01-11",
+            ),
         ],
         overall_pass_rate=0.96,
         monitoring=MonitoringConfig(
             cadence="daily",
-            canary_prompts=[{"prompt": "Extract fund name and expense ratio from this prospectus", "expected_contains": "fund_name"}],
+            canary_prompts=[
+                {
+                    "prompt": "Extract fund name and expense ratio from this prospectus",
+                    "expected_contains": "fund_name",
+                }
+            ],
             thresholds={"accuracy_min": 0.90, "latency_p99_ms": 5000},
         ),
         open_findings=1,
@@ -169,17 +194,49 @@ MODEL_REGISTRY: list[GovernedModel] = [
         next_recertification="2026-05-01",
         compliance=ComplianceMapping(
             sr_11_7=["Model Definition", "Effective Challenge", "Governance", "Ongoing Monitoring"],
-            nist_600_1=["Governance", "Content Provenance", "Pre-deployment Testing", "Incident Disclosure"],
-            owasp_llm_2025=["LLM01 Prompt Injection", "LLM06 Sensitive Disclosure", "LLM09 Misinformation"],
+            nist_600_1=[
+                "Governance",
+                "Content Provenance",
+                "Pre-deployment Testing",
+                "Incident Disclosure",
+            ],
+            owasp_llm_2025=[
+                "LLM01 Prompt Injection",
+                "LLM06 Sensitive Disclosure",
+                "LLM09 Misinformation",
+            ],
             finra=["Prompt/output logging", "Model version tracking", "PII redaction"],
         ),
         eval_results=[
-            EvalResult(eval_type="quality_correctness", total_tests=30, passed=28, failed=2, pass_rate=0.933, date="2025-10-20"),
-            EvalResult(eval_type="safety_security", total_tests=40, passed=38, failed=2, pass_rate=0.95, date="2025-10-22"),
-            EvalResult(eval_type="pii_redaction", total_tests=15, passed=15, failed=0, pass_rate=1.0, date="2025-10-21"),
+            EvalResult(
+                eval_type="quality_correctness",
+                total_tests=30,
+                passed=28,
+                failed=2,
+                pass_rate=0.933,
+                date="2025-10-20",
+            ),
+            EvalResult(
+                eval_type="safety_security",
+                total_tests=40,
+                passed=38,
+                failed=2,
+                pass_rate=0.95,
+                date="2025-10-22",
+            ),
+            EvalResult(
+                eval_type="pii_redaction",
+                total_tests=15,
+                passed=15,
+                failed=0,
+                pass_rate=1.0,
+                date="2025-10-21",
+            ),
         ],
         overall_pass_rate=0.95,
-        monitoring=MonitoringConfig(cadence="daily", thresholds={"faithfulness_min": 0.85, "pii_leak_max": 0.0}),
+        monitoring=MonitoringConfig(
+            cadence="daily", thresholds={"faithfulness_min": 0.85, "pii_leak_max": 0.0}
+        ),
         open_findings=2,
         total_findings=5,
     ),
@@ -207,9 +264,23 @@ MODEL_REGISTRY: list[GovernedModel] = [
             finra=["Model version tracking"],
         ),
         eval_results=[
-            EvalResult(eval_type="quality_correctness", total_tests=20, passed=19, failed=1, pass_rate=0.95, date="2026-01-28"),
-            EvalResult(eval_type="fact_verification", total_tests=50, passed=48, failed=2, pass_rate=0.96, date="2026-01-29",
-                       details={"numbers_verified": 48, "numbers_unverified": 2}),
+            EvalResult(
+                eval_type="quality_correctness",
+                total_tests=20,
+                passed=19,
+                failed=1,
+                pass_rate=0.95,
+                date="2026-01-28",
+            ),
+            EvalResult(
+                eval_type="fact_verification",
+                total_tests=50,
+                passed=48,
+                failed=2,
+                pass_rate=0.96,
+                date="2026-01-29",
+                details={"numbers_verified": 48, "numbers_unverified": 2},
+            ),
         ],
         overall_pass_rate=0.955,
         monitoring=MonitoringConfig(cadence="weekly", thresholds={"fact_accuracy_min": 0.95}),
@@ -237,7 +308,14 @@ MODEL_REGISTRY: list[GovernedModel] = [
             owasp_llm_2025=["LLM01 Prompt Injection", "LLM09 Misinformation"],
         ),
         eval_results=[
-            EvalResult(eval_type="quality_correctness", total_tests=15, passed=14, failed=1, pass_rate=0.933, date="2026-02-10"),
+            EvalResult(
+                eval_type="quality_correctness",
+                total_tests=15,
+                passed=14,
+                failed=1,
+                pass_rate=0.933,
+                date="2026-02-10",
+            ),
         ],
         overall_pass_rate=0.933,
         open_findings=1,
@@ -264,16 +342,43 @@ MODEL_REGISTRY: list[GovernedModel] = [
             sr_11_7=["Model Definition", "Effective Challenge", "Ongoing Monitoring"],
             nist_600_1=["Governance", "Pre-deployment Testing"],
             owasp_llm_2025=["LLM01 Prompt Injection", "LLM06 Sensitive Disclosure"],
-            finra=["FINRA 2210 (Communications)", "FINRA 2111 (Suitability)", "Prompt/output logging"],
+            finra=[
+                "FINRA 2210 (Communications)",
+                "FINRA 2111 (Suitability)",
+                "Prompt/output logging",
+            ],
         ),
         eval_results=[
-            EvalResult(eval_type="quality_correctness", total_tests=40, passed=39, failed=1, pass_rate=0.975, date="2026-02-03"),
-            EvalResult(eval_type="safety_security", total_tests=25, passed=24, failed=1, pass_rate=0.96, date="2026-02-04"),
-            EvalResult(eval_type="false_positive_rate", total_tests=30, passed=28, failed=2, pass_rate=0.933, date="2026-02-04",
-                       details={"false_positives": 2, "false_negatives": 0}),
+            EvalResult(
+                eval_type="quality_correctness",
+                total_tests=40,
+                passed=39,
+                failed=1,
+                pass_rate=0.975,
+                date="2026-02-03",
+            ),
+            EvalResult(
+                eval_type="safety_security",
+                total_tests=25,
+                passed=24,
+                failed=1,
+                pass_rate=0.96,
+                date="2026-02-04",
+            ),
+            EvalResult(
+                eval_type="false_positive_rate",
+                total_tests=30,
+                passed=28,
+                failed=2,
+                pass_rate=0.933,
+                date="2026-02-04",
+                details={"false_positives": 2, "false_negatives": 0},
+            ),
         ],
         overall_pass_rate=0.96,
-        monitoring=MonitoringConfig(cadence="daily", thresholds={"detection_rate_min": 0.95, "false_positive_max": 0.05}),
+        monitoring=MonitoringConfig(
+            cadence="daily", thresholds={"detection_rate_min": 0.95, "false_positive_max": 0.05}
+        ),
         open_findings=1,
         total_findings=3,
     ),
@@ -293,10 +398,20 @@ def get_governance_summary() -> dict:
     models = MODEL_REGISTRY
     return {
         "total_models": len(models),
-        "by_status": {s.value: sum(1 for m in models if m.status == s) for s in ModelStatus if any(m.status == s for m in models)},
-        "by_risk": {r.value: sum(1 for m in models if m.risk_rating == r) for r in RiskRating if any(m.risk_rating == r for m in models)},
+        "by_status": {
+            s.value: sum(1 for m in models if m.status == s)
+            for s in ModelStatus
+            if any(m.status == s for m in models)
+        },
+        "by_risk": {
+            r.value: sum(1 for m in models if m.risk_rating == r)
+            for r in RiskRating
+            if any(m.risk_rating == r for m in models)
+        },
         "avg_pass_rate": sum(m.overall_pass_rate or 0 for m in models) / len(models),
         "total_open_findings": sum(m.open_findings for m in models),
         "total_eval_runs": sum(len(m.eval_results) for m in models),
-        "certified_count": sum(1 for m in models if m.status in (ModelStatus.CERTIFIED, ModelStatus.MONITORING)),
+        "certified_count": sum(
+            1 for m in models if m.status in (ModelStatus.CERTIFIED, ModelStatus.MONITORING)
+        ),
     }
