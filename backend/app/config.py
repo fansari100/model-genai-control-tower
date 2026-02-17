@@ -113,7 +113,9 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-5.2"
     anthropic_api_key: str = ""
-    anthropic_model: str = "claude-sonnet-5-20260110"
+    anthropic_model: str = "claude-opus-4-20260203"
+    google_api_key: str = ""
+    google_model: str = "gemini-3-pro-2026-01-21"
 
     # ── Feature Flags ────────────────────────────────────────
     enable_otel: bool = True

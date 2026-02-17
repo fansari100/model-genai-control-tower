@@ -42,19 +42,36 @@ def main() -> None:
         },
     )
 
-    # Claude Sonnet 5 AIBOM
+    # Claude Opus 4.6 AIBOM
     claude_aibom = generate_aibom(
-        model_name="Claude Sonnet 5",
+        model_name="Claude Opus 4.6",
         model_version="20250514",
         model_type="llm",
         provider="Anthropic",
-        provider_model_id="claude-sonnet-5-20260110",
+        provider_model_id="claude-opus-4-20260203",
         deployment="vendor_api",
         context_window=200000,
         training_cutoff="2025-04",
         known_limitations="Constitutional AI constraints may affect edge-case responses",
         dependencies=[
             {"name": "anthropic", "version": "0.40.0"},
+        ],
+        risk_tier="tier_2_high",
+        licenses=["Proprietary"],
+    )
+
+    # Gemini 3 Pro AIBOM
+    gemini_aibom = generate_aibom(
+        model_name="Gemini 3 Pro",
+        model_version="2026-01-21",
+        model_type="llm",
+        provider="Google DeepMind",
+        provider_model_id="gemini-3-pro-2026-01-21",
+        deployment="vendor_api",
+        description="Multimodal model with 2M context, advanced reasoning & grounding",
+        known_limitations="Safety filters may over-trigger on financial jargon in some locales",
+        dependencies=[
+            {"name": "google-genai", "version": "1.5.0"},
         ],
         risk_tier="tier_2_high",
         licenses=["Proprietary"],
@@ -78,7 +95,8 @@ def main() -> None:
 
     for name, aibom in [
         ("gpt52", gpt52_aibom),
-        ("claude_sonnet_5", claude_aibom),
+        ("claude_opus_46", claude_aibom),
+        ("gemini_3_pro", gemini_aibom),
         ("text_embedding_3_large", embeddings_aibom),
     ]:
         output_path = output_dir / f"aibom_{name}.json"
@@ -86,7 +104,7 @@ def main() -> None:
             f.write(aibom_to_json(aibom))
         print(f"  ✅ Generated: {output_path}")
 
-    print(f"\n📋 Generated {3} AIBOMs in {output_dir}")
+    print(f"\n📋 Generated {4} AIBOMs in {output_dir}")
 
 
 if __name__ == "__main__":

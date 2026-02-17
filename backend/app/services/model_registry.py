@@ -80,7 +80,7 @@ class GovernedModel(BaseModel):
     status: ModelStatus
 
     # Architecture
-    base_model: str  # e.g., "gpt-5.2", "claude-sonnet-5"
+    base_model: str  # e.g., "gpt-5.2", "claude-opus-4.6", "gemini-3-pro"
     uses_rag: bool = False
     uses_structured_output: bool = True
     client_facing: bool = False

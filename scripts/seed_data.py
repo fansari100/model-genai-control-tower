@@ -67,7 +67,18 @@ async def seed() -> None:
             data_processing_region="US",
             certifications={"soc2": True, "iso27001": True},
         )
-        session.add_all([openai, anthropic])
+        google = Vendor(
+            name="Google DeepMind",
+            legal_entity="Google LLC",
+            contract_id="VENDOR-GOOG-2026",
+            contact_email="cloud-ai@google.com",
+            description="Gemini family of multimodal models",
+            security_posture=VendorSecurityPosture.APPROVED,
+            sla_summary="99.95% uptime, configurable data residency",
+            data_processing_region="US",
+            certifications={"soc2": True, "iso27001": True, "fedramp": True},
+        )
+        session.add_all([openai, anthropic, google])
         await session.flush()
 
         # ── Models ───────────────────────────────────────────
@@ -89,7 +100,7 @@ async def seed() -> None:
             owasp_llm_risks={"applicable": ["LLM01", "LLM06", "LLM09"]},
         )
         claude = Model(
-            name="Claude Sonnet 5",
+            name="Claude Opus 4.6",
             version="20250514",
             description="Advanced reasoning model with enhanced safety",
             purpose="Complex analysis, summarization, code generation",
@@ -99,9 +110,26 @@ async def seed() -> None:
             risk_tier=RiskTier.TIER_2_HIGH,
             owner="AI Platform Team",
             business_unit="Wealth Management",
-            provider_model_id="claude-sonnet-5-20260110",
+            provider_model_id="claude-opus-4-20260203",
             context_window=200000,
             vendor_id=anthropic.id,
+        )
+        gemini = Model(
+            name="Gemini 3 Pro",
+            version="2026-01-21",
+            description="Multimodal model with 2M context, advanced reasoning & grounding",
+            purpose="Long-context analysis, complex reasoning, multimodal understanding",
+            model_type=ModelType.LLM,
+            deployment=ModelDeployment.VENDOR_API,
+            status=ModelStatus.APPROVED,
+            risk_tier=RiskTier.TIER_2_HIGH,
+            owner="AI Platform Team",
+            business_unit="Wealth Management",
+            provider_model_id="gemini-3-pro-2026-01-21",
+            context_window=2000000,
+            vendor_id=google.id,
+            sr_11_7_classification="Model",
+            owasp_llm_risks={"applicable": ["LLM01", "LLM06", "LLM09"]},
         )
         embeddings = Model(
             name="text-embedding-3-large",
@@ -114,7 +142,7 @@ async def seed() -> None:
             owner="AI Platform Team",
             vendor_id=openai.id,
         )
-        session.add_all([gpt52, claude, embeddings])
+        session.add_all([gpt52, claude, gemini, embeddings])
         await session.flush()
 
         # ── Tools / EUCs ─────────────────────────────────────

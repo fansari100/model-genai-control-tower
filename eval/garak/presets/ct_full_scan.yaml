@@ -9,6 +9,8 @@
 # Usage:
 #   garak --model_type openai --model_name gpt-5.2 \
 #         --probes <probe_list> --report_prefix ct_scan
+#   garak --model_type google --model_name gemini-3-pro \
+#         --probes <probe_list> --report_prefix ct_scan_gemini
 #
 # Or use the convenience commands in the Makefile.
 # ─────────────────────────────────────────────────────────────

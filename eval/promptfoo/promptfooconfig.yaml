@@ -27,6 +27,12 @@ providers:
       temperature: 0
       max_tokens: 2048
 
+  - id: vertex:gemini-3-pro
+    label: "Gemini 3 Pro (Google)"
+    config:
+      temperature: 0
+      maxOutputTokens: 2048
+
 # ── Prompts ──────────────────────────────────────────────────
 prompts:
   - file://prompts/assistant_qa.txt
