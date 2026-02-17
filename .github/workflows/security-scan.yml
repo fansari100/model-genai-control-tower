@@ -34,7 +34,7 @@ jobs:
         run: pip install garak
       - name: Run garak scan
         run: |
-          garak --model_type openai --model_name gpt-4o \
+          garak --model_type openai --model_name gpt-5.2 \
             --probes promptinject,leakreplay,encoding,snowball \
             --report_prefix ct_garak_$(date +%Y%m%d)
       - name: Upload results

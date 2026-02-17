@@ -15,7 +15,6 @@ from app.database import Base
 from app.models.base import AuditMixin, TimestampMixin, generate_uuid
 
 if TYPE_CHECKING:
-    pass
     from app.models.genai_use_case import GenAIUseCase
 
 
