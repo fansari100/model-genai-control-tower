@@ -60,7 +60,7 @@ export default function EvaluationsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-6 gap-4">
         <div className="rounded-lg border bg-white p-4 text-center">
           <p className="text-2xl font-bold text-gray-900">{allEvals.length}</p>
           <p className="text-xs text-gray-500">Total Runs</p>
@@ -74,10 +74,14 @@ export default function EvaluationsPage() {
           <p className="text-xs text-gray-500">Running</p>
         </div>
         <div className="rounded-lg border bg-white p-4 text-center">
+          <p className="text-2xl font-bold text-yellow-600">{allEvals.filter((e: any) => e.status === "pending").length}</p>
+          <p className="text-xs text-gray-500">Pending</p>
+        </div>
+        <div className="rounded-lg border bg-white p-4 text-center">
           <p className="text-2xl font-bold text-gray-900">
             {(() => {
               const completed = allEvals.filter((e: any) => e.pass_rate !== null);
-              const avg = completed.reduce((sum, e) => sum + (e.pass_rate || 0), 0) / completed.length;
+              const avg = completed.length > 0 ? completed.reduce((sum, e) => sum + (e.pass_rate || 0), 0) / completed.length : 0;
               return `${(avg * 100).toFixed(1)}%`;
             })()}
           </p>

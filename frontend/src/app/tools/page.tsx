@@ -54,7 +54,7 @@ export default function ToolsPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         <div className="rounded-lg border bg-white p-4 text-center">
           <p className="text-2xl font-bold text-gray-900">{allTools.length}</p>
           <p className="text-xs text-gray-500">Total Tools</p>
@@ -62,6 +62,10 @@ export default function ToolsPage() {
         <div className="rounded-lg border bg-white p-4 text-center">
           <p className="text-2xl font-bold text-green-600">{allTools.filter(t => t.status === "attested").length}</p>
           <p className="text-xs text-gray-500">Attested</p>
+        </div>
+        <div className="rounded-lg border bg-white p-4 text-center">
+          <p className="text-2xl font-bold text-purple-600">{allTools.filter(t => t.status === "under_review").length}</p>
+          <p className="text-xs text-gray-500">Under Review</p>
         </div>
         <div className="rounded-lg border bg-white p-4 text-center">
           <p className="text-2xl font-bold text-yellow-600">{allTools.filter(t => t.status === "attestation_due").length}</p>
