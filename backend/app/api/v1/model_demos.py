@@ -212,12 +212,22 @@ async def demo_risk_narrative(body: dict):
     if not raw:
         return {"error": "Provide 'portfolio' field (JSON)"}
 
+    # Validate JSON before calling LLM
+    try:
+        data = json.loads(raw) if isinstance(raw, str) else raw
+        if not isinstance(data, dict):
+            return {"error": "Invalid JSON: expected an object"}
+    except (json.JSONDecodeError, TypeError):
+        return {"error": "Invalid JSON: could not parse portfolio data"}
+
+    portfolio_str = json.dumps(data)
+
     if _get_api_key():
         result = await _llm_call(
             "You are a portfolio risk analyst at Morgan Stanley WM. Generate professional risk commentary "
             "as JSON: executive_summary, performance_commentary, risk_assessment, action_recommendations, "
             "confidence_score. ONLY cite numbers from the data.",
-            f"Portfolio:\n{raw if isinstance(raw, str) else json.dumps(raw)}",
+            f"Portfolio:\n{portfolio_str}",
         )
         if result and "llm_error" not in result:
             return {
@@ -227,10 +237,6 @@ async def demo_risk_narrative(body: dict):
                 "narrative": result,
             }
 
-    try:
-        data = json.loads(raw) if isinstance(raw, str) else raw
-    except json.JSONDecodeError:
-        return {"error": "Invalid JSON"}
     return {
         "model": "Portfolio Risk Narrator v1.0.0",
         "mode": "rule_based",
@@ -294,6 +300,13 @@ async def demo_compliance_check(body: dict):
 
     text_lower = text.lower()
     violations: list[dict] = []
+
+    # Disclaimer phrases that negate promissory language
+    disclaimer_ctx = [
+        "not guarantee", "no guarantee", "does not guarantee",
+        "cannot guarantee", "past performance",
+    ]
+
     for pattern, word in [
         (r"\bguarantee[ds]?\b", "guaranteed"),
         (r"\brisk[\s-]?free\b", "risk-free"),
@@ -303,6 +316,12 @@ async def demo_compliance_check(body: dict):
     ]:
         match = re.search(pattern, text_lower)
         if match:
+            # Skip "guarantee" when it appears in disclaimer context
+            if word == "guaranteed":
+                ctx_start = max(0, match.start() - 25)
+                ctx = text_lower[ctx_start : match.end() + 5]
+                if any(d in ctx for d in disclaimer_ctx):
+                    continue
             violations.append(
                 {
                     "type": "promissory_language",
