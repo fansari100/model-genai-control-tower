@@ -18,19 +18,19 @@ import { dashboard as dashboardApi } from "@/lib/api";
 // Seed data used as initial state until the API responds.
 const initialSummary = {
   inventory: {
-    models: { total: 12, by_status: { approved: 5, under_review: 4, draft: 3 } },
-    tools: { total: 28, by_status: { attested: 18, attestation_due: 6, under_review: 4 } },
+    models: { total: 7, by_status: { approved: 5, under_review: 1, intake: 1 } },
+    tools: { total: 8, by_status: { attested: 5, attestation_due: 1, under_review: 1, attestation_overdue: 1 } },
     use_cases: {
       total: 8,
       by_status: { approved: 3, testing: 2, intake: 2, monitoring: 1 },
-      by_risk: { critical: 1, high: 2, medium: 3, low: 2 },
+      by_risk: { critical: 1, high: 3, medium: 3, low: 1 },
     },
   },
   risk_posture: {
-    open_critical_findings: 3,
-    total_findings: 24,
-    avg_eval_pass_rate: 0.94,
-    total_evaluations: 47,
+    open_critical_findings: 2,
+    total_findings: 7,
+    avg_eval_pass_rate: 0.95,
+    total_evaluations: 8,
   },
   compliance: {
     frameworks: [
