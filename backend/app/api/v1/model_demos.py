@@ -212,15 +212,15 @@ async def demo_risk_narrative(body: dict):
     if not raw:
         return {"error": "Provide 'portfolio' field (JSON)"}
 
-    # Validate JSON before calling LLM
+    # Validate JSON structure first
     try:
         data = json.loads(raw) if isinstance(raw, str) else raw
         if not isinstance(data, dict):
-            return {"error": "Invalid JSON: expected an object"}
+            return {"error": "Invalid JSON — expected an object"}
     except (json.JSONDecodeError, TypeError):
-        return {"error": "Invalid JSON: could not parse portfolio data"}
+        return {"error": "Invalid JSON — could not parse portfolio data"}
 
-    portfolio_str = json.dumps(data)
+    portfolio_str = json.dumps(data) if isinstance(data, dict) else str(raw)
 
     if _get_api_key():
         result = await _llm_call(
@@ -302,10 +302,17 @@ async def demo_compliance_check(body: dict):
     violations: list[dict] = []
 
     # Disclaimer phrases that negate promissory language
-    disclaimer_ctx = [
-        "not guarantee", "no guarantee", "does not guarantee",
-        "cannot guarantee", "past performance",
+    disclaimer_phrases = [
+        "not guarantee",
+        "no guarantee",
+        "does not guarantee",
+        "don't guarantee",
+        "cannot guarantee",
+        "past performance",
+        "may lose value",
+        "not guaranteed",
     ]
+    has_disclaimer = any(d in text_lower for d in disclaimer_phrases)
 
     for pattern, word in [
         (r"\bguarantee[ds]?\b", "guaranteed"),
@@ -316,11 +323,12 @@ async def demo_compliance_check(body: dict):
     ]:
         match = re.search(pattern, text_lower)
         if match:
-            # Skip "guarantee" when it appears in disclaimer context
-            if word == "guaranteed":
-                ctx_start = max(0, match.start() - 25)
+            # Skip "guarantee" if it appears in a disclaimer context
+            if word == "guaranteed" and has_disclaimer:
+                # Check if THIS match is within a disclaimer phrase
+                ctx_start = max(0, match.start() - 20)
                 ctx = text_lower[ctx_start : match.end() + 5]
-                if any(d in ctx for d in disclaimer_ctx):
+                if any(d in ctx for d in ["not guarantee", "no guarantee", "does not guarantee"]):
                     continue
             violations.append(
                 {
