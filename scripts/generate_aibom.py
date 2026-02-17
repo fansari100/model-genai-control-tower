@@ -21,7 +21,7 @@ def main() -> None:
     # GPT-5.2 AIBOM
     gpt52_aibom = generate_aibom(
         model_name="GPT-5.2",
-        model_version="2024-11-20",
+        model_version="2025-12-11",
         model_type="llm",
         provider="OpenAI",
         provider_model_id="gpt-5.2-2025-12-11",
@@ -45,10 +45,10 @@ def main() -> None:
     # Claude Opus 4.6 AIBOM
     claude_aibom = generate_aibom(
         model_name="Claude Opus 4.6",
-        model_version="20250514",
+        model_version="2026-02-03",
         model_type="llm",
         provider="Anthropic",
-        provider_model_id="claude-opus-4-20260203",
+        provider_model_id="claude-opus-4-2026-02-03",
         deployment="vendor_api",
         context_window=200000,
         training_cutoff="2025-04",

@@ -9,7 +9,7 @@ import type { Model, PaginatedResponse } from "@/lib/types";
 
 const seedModels: Model[] = [
   { id: "1", name: "GPT-5.2", version: "2025-12-11", model_type: "llm", deployment: "vendor_api", status: "approved", risk_tier: "tier_2_high", owner: "AI Platform Team", vendor_id: "v-openai", provider_model_id: "gpt-5.2-2025-12-11", created_at: "2024-06-15T00:00:00Z" },
-  { id: "2", name: "Claude Opus 4.6", version: "20260203", model_type: "llm", deployment: "vendor_api", status: "under_review", risk_tier: "tier_2_high", owner: "AI Platform Team", vendor_id: "v-anthropic", provider_model_id: "claude-opus-4-20260203", created_at: "2025-01-10T00:00:00Z" },
+  { id: "2", name: "Claude Opus 4.6", version: "2026-02-03", model_type: "llm", deployment: "vendor_api", status: "under_review", risk_tier: "tier_2_high", owner: "AI Platform Team", vendor_id: "v-anthropic", provider_model_id: "claude-opus-4-2026-02-03", created_at: "2025-01-10T00:00:00Z" },
   { id: "3", name: "Gemini 3 Pro", version: "2026-01-21", model_type: "llm", deployment: "vendor_api", status: "approved", risk_tier: "tier_2_high", owner: "AI Platform Team", vendor_id: "v-google", provider_model_id: "gemini-3-pro-2026-01-21", created_at: "2026-01-25T00:00:00Z" },
   { id: "4", name: "WM Portfolio Optimizer", version: "3.2.1", model_type: "ml_traditional", deployment: "on_premise", status: "approved", risk_tier: "tier_1_critical", owner: "Quantitative Analytics", created_at: "2023-03-20T00:00:00Z" },
   { id: "5", name: "Client Risk Scorer", version: "2.0.0", model_type: "statistical", deployment: "on_premise", status: "approved", risk_tier: "tier_3_medium", owner: "Risk Management", created_at: "2022-11-01T00:00:00Z" },

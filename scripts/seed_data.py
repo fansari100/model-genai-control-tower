@@ -84,7 +84,7 @@ async def seed() -> None:
         # ── Models ───────────────────────────────────────────
         gpt52 = Model(
             name="GPT-5.2",
-            version="2024-11-20",
+            version="2025-12-11",
             description="Multimodal LLM – flagship model",
             purpose="General-purpose text generation, analysis, and reasoning",
             model_type=ModelType.LLM,
@@ -101,7 +101,7 @@ async def seed() -> None:
         )
         claude = Model(
             name="Claude Opus 4.6",
-            version="20250514",
+            version="2026-02-03",
             description="Advanced reasoning model with enhanced safety",
             purpose="Complex analysis, summarization, code generation",
             model_type=ModelType.LLM,
@@ -110,7 +110,7 @@ async def seed() -> None:
             risk_tier=RiskTier.TIER_2_HIGH,
             owner="AI Platform Team",
             business_unit="Wealth Management",
-            provider_model_id="claude-opus-4-20260203",
+            provider_model_id="claude-opus-4-2026-02-03",
             context_window=200000,
             vendor_id=anthropic.id,
         )
