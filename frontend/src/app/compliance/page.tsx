@@ -5,11 +5,11 @@ import { cn } from "@/lib/utils";
 
 const owaspLlm = [
   { id: "LLM01", name: "Prompt Injection", controls: ["Cascade guardrail (regex → ML classifier)", "promptfoo 20+ injection tests", "PyRIT 10 attack scenarios", "OPA agent_controls.rego"], severity: "critical" },
-  { id: "LLM02", name: "Insecure Output Handling", controls: ["Output guardrails: PII/toxicity scan", "HITL for client-facing outputs", "Output hash + evidence logging"], severity: "high" },
-  { id: "LLM04", name: "Model DoS / Resource", controls: ["Token budget enforcement", "Rate limiting at gateway", "Cost tracking per eval run"], severity: "medium" },
-  { id: "LLM06", name: "Sensitive Info Disclosure", controls: ["PII redaction (Presidio)", "OPA data_classification.rego", "Retrieval entitlement simulation"], severity: "critical" },
-  { id: "LLM07", name: "Excessive Agency", controls: ["OPA tool_permissions.rego allowlists", "Per-turn tool call limits", "Human approval for write ops"], severity: "high" },
-  { id: "LLM08", name: "Data & Model Poisoning", controls: ["AIBOM supply-chain transparency", "Dataset SHA-256 hashing", "Corpus change triggers recert"], severity: "high" },
+  { id: "LLM05", name: "Improper Output Handling", controls: ["Output guardrails: PII/toxicity scan", "HITL for client-facing outputs", "Output hash + evidence logging"], severity: "high" },
+  { id: "LLM10", name: "Unbounded Consumption", controls: ["Token budget enforcement", "Rate limiting at gateway", "Cost tracking per eval run"], severity: "medium" },
+  { id: "LLM02", name: "Sensitive Information Disclosure", controls: ["PII redaction (Presidio)", "OPA data_classification.rego", "Retrieval entitlement simulation"], severity: "critical" },
+  { id: "LLM06", name: "Excessive Agency", controls: ["OPA tool_permissions.rego allowlists", "Per-turn tool call limits", "Human approval for write ops"], severity: "high" },
+  { id: "LLM04", name: "Data & Model Poisoning", controls: ["AIBOM supply-chain transparency", "Dataset SHA-256 hashing", "Corpus change triggers recert"], severity: "high" },
   { id: "LLM09", name: "Misinformation", controls: ["RAG groundedness evaluation", "Mandatory citation enforcement", "Canary regression monitoring"], severity: "high" },
 ];
 

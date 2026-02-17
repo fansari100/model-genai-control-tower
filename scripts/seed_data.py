@@ -101,7 +101,7 @@ async def seed() -> None:
         )
         claude = Model(
             name="Claude Opus 4.6",
-            version="2026-02-03",
+            version="4.6",
             description="Advanced reasoning model with enhanced safety",
             purpose="Complex analysis, summarization, code generation",
             model_type=ModelType.LLM,
@@ -110,13 +110,13 @@ async def seed() -> None:
             risk_tier=RiskTier.TIER_2_HIGH,
             owner="AI Platform Team",
             business_unit="Wealth Management",
-            provider_model_id="claude-opus-4-2026-02-03",
+            provider_model_id="claude-opus-4-6",
             context_window=200000,
             vendor_id=anthropic.id,
         )
         gemini = Model(
             name="Gemini 3 Pro",
-            version="2026-01-21",
+            version="3.0",
             description="Multimodal model with 2M context, advanced reasoning & grounding",
             purpose="Long-context analysis, complex reasoning, multimodal understanding",
             model_type=ModelType.LLM,
@@ -125,7 +125,7 @@ async def seed() -> None:
             risk_tier=RiskTier.TIER_2_HIGH,
             owner="AI Platform Team",
             business_unit="Wealth Management",
-            provider_model_id="gemini-3-pro-2026-01-21",
+            provider_model_id="gemini-3.0-pro",
             context_window=2000000,
             vendor_id=google.id,
             sr_11_7_classification="Model",

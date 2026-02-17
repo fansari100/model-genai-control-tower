@@ -9,7 +9,7 @@ import { useState } from "react";
 
 const seedFindings = [
   { id: "f1", title: "Prompt injection bypass in multi-turn conversation", severity: "high", status: "open", source: "red_team", use_case: "WM Assistant", owasp_risk_id: "LLM01", remediation_owner: "AI Platform Team", remediation_due_date: "2026-03-01T00:00:00Z", created_at: "2026-02-10T00:00:00Z" },
-  { id: "f2", title: "PII detected in model output for account query", severity: "critical", status: "in_progress", source: "evaluation", use_case: "WM Assistant", owasp_risk_id: "LLM06", remediation_owner: "AI Platform Team", remediation_due_date: "2026-02-20T00:00:00Z", created_at: "2026-02-08T00:00:00Z" },
+  { id: "f2", title: "PII detected in model output for account query", severity: "critical", status: "in_progress", source: "evaluation", use_case: "WM Assistant", owasp_risk_id: "LLM02", remediation_owner: "AI Platform Team", remediation_due_date: "2026-02-20T00:00:00Z", created_at: "2026-02-08T00:00:00Z" },
   { id: "f3", title: "Meeting summarizer occasionally hallucinates action items", severity: "medium", status: "open", source: "evaluation", use_case: "Debrief", owasp_risk_id: "LLM09", remediation_owner: "WM Technology", remediation_due_date: "2026-03-15T00:00:00Z", created_at: "2026-02-11T00:00:00Z" },
   { id: "f4", title: "Agent tool call exceeded permission scope", severity: "high", status: "mitigated", source: "red_team", use_case: "Research Agent", owasp_risk_id: "ASI02", remediation_owner: "AI Platform Team", created_at: "2026-02-12T00:00:00Z" },
   { id: "f5", title: "Model version not logged in 3% of requests", severity: "medium", status: "in_progress", source: "monitoring", use_case: "Debrief", remediation_owner: "WM Technology", created_at: "2026-02-13T00:00:00Z" },

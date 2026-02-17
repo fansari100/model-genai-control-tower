@@ -80,7 +80,7 @@ class GovernedModel(BaseModel):
     status: ModelStatus
 
     # Architecture
-    base_model: str  # e.g., "gpt-5.2", "claude-opus-4.6", "gemini-3-pro"
+    base_model: str  # e.g., "gpt-5.2", "claude-opus-4-6", "gemini-3.0-pro"
     uses_rag: bool = False
     uses_structured_output: bool = True
     client_facing: bool = False
@@ -118,7 +118,7 @@ MODEL_REGISTRY: list[GovernedModel] = [
         version="1.0.0",
         vendor="Internal (WM AI Platform)",
         description="Extracts structured financial data from unstructured documents (prospectuses, fund fact sheets, investment policy statements)",
-        methodology="RAG pipeline with ChromaDB vector store + GPT-5.2 structured output (Pydantic) + business rules validation",
+        methodology="RAG pipeline with vector store (ChromaDB local/pgvector prod) + GPT-5.2 structured output (Pydantic) + business rules validation",
         model_type="extraction",
         risk_rating=RiskRating.HIGH,
         status=ModelStatus.CERTIFIED,
@@ -293,7 +293,7 @@ MODEL_REGISTRY: list[GovernedModel] = [
         version="1.0.0",
         vendor="Internal (Compliance)",
         description="Monitors regulatory updates (SEC/FINRA/OCC) and identifies changes impacting WM operations with semantic similarity matching",
-        methodology="Semantic embedding (text-embedding-3-large) + ChromaDB similarity search against WM control catalog + GPT-5.2 impact analysis",
+        methodology="Semantic embedding (text-embedding-3-large) + vector similarity search (ChromaDB local/pgvector prod) against WM control catalog + GPT-5.2 impact analysis",
         model_type="analysis",
         risk_rating=RiskRating.MEDIUM,
         status=ModelStatus.TESTING,
@@ -341,7 +341,7 @@ MODEL_REGISTRY: list[GovernedModel] = [
         compliance=ComplianceMapping(
             sr_11_7=["Model Definition", "Effective Challenge", "Ongoing Monitoring"],
             nist_600_1=["Governance", "Pre-deployment Testing"],
-            owasp_llm_2025=["LLM01 Prompt Injection", "LLM06 Sensitive Disclosure"],
+            owasp_llm_2025=["LLM01 Prompt Injection", "LLM02 Sensitive Information Disclosure"],
             finra=[
                 "FINRA 2210 (Communications)",
                 "FINRA 2111 (Suitability)",

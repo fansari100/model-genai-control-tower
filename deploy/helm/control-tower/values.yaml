@@ -179,7 +179,7 @@ minio:
       enabled: true
       kmsKeyId: arn:aws:kms:us-east-1:xxxx:key/xxxx
     objectLock:
-      enabled: true  # WORM compliance
+      enabled: true  # Immutability with break-glass (GOVERNANCE mode)
       defaultRetention:
         mode: GOVERNANCE
         days: 2555  # 7 years regulatory retention

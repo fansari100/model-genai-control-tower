@@ -4,7 +4,7 @@ MinIO / S3 storage client for evidence artifacts.
 Provides:
   - Upload with content-addressed key
   - Download + integrity verification
-  - WORM (Write Once Read Many) lock support
+  - S3 Object Lock (GOVERNANCE mode) with privileged break-glass override
   - Presigned URL generation for secure downloads
 """
 

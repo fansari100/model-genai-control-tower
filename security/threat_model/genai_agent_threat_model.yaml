@@ -83,7 +83,7 @@ stride_threats:
   information_disclosure:
     - id: "I-001"
       threat: "PII leakage in model outputs"
-      owasp_ref: "LLM06"
+      owasp_ref: "LLM02"
       likelihood: "medium"
       impact: "critical"
       controls:
@@ -95,7 +95,7 @@ stride_threats:
 
     - id: "I-002"
       threat: "Training data extraction via adversarial prompts"
-      owasp_ref: "LLM06"
+      owasp_ref: "LLM02"
       mitre_ref: "AML.T0024"
       likelihood: "low"
       impact: "high"
@@ -134,7 +134,7 @@ stride_threats:
 
     - id: "E-002"
       threat: "Excessive agency — model performing actions beyond scope"
-      owasp_ref: "LLM07"
+      owasp_ref: "LLM06"
       likelihood: "medium"
       impact: "high"
       controls:

@@ -269,6 +269,6 @@ evidence_artifacts:
     - "vendor_outage_incident_report"
     - "vendor_sla_compliance_report"
 
-  storage: "S3 (WORM, 7-year retention, SHA-256 content-addressed)"
+  storage: "S3 (Object Lock GOVERNANCE, 7-year retention, SHA-256 content-addressed)"
   index: "PostgreSQL evidence_artifacts table"
   retrieval: "< 500ms for hot records, < 4h for archived"

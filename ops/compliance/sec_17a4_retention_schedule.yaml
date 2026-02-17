@@ -38,7 +38,7 @@ retention_schedule:
       - "User/session context (authenticated principal)"
     index_fields: ["timestamp", "model_id", "use_case_id", "user_id", "request_id"]
     searchable: true
-    immutability: "WORM (Write-Once-Read-Many via S3 Object Lock)"
+    immutability: "S3 Object Lock (GOVERNANCE mode) — immutable with privileged break-glass override"
 
   # 17a-4(b)(4) — Records of all transactions
   approval_records:
@@ -71,7 +71,7 @@ retention_schedule:
       - "ISO 42001 PDCA mapping"
     index_fields: ["pack_id", "use_case_id", "generated_at", "overall_status"]
     searchable: true
-    immutability: "WORM + SHA-256 content hash"
+    immutability: "S3 Object Lock (GOVERNANCE) + SHA-256 content hash"
 
   # SR 11-7 — Model validation artifacts
   evaluation_results:
@@ -86,7 +86,7 @@ retention_schedule:
       - "Vulnerability scan findings"
     index_fields: ["run_id", "use_case_id", "model_id", "eval_type", "timestamp"]
     searchable: true
-    immutability: "WORM"
+    immutability: "S3 Object Lock (GOVERNANCE mode)"
 
   # SR 11-7 — Findings and remediation
   findings_register:
@@ -116,7 +116,7 @@ retention_schedule:
       - "All evaluation triggers and completions"
     index_fields: ["event_type", "timestamp", "entity_id", "user_id"]
     searchable: true
-    immutability: "Kafka immutable log + S3 WORM archive"
+    immutability: "Kafka append-only log + S3 Object Lock archive"
 
   # Model inventory and version history
   model_inventory:

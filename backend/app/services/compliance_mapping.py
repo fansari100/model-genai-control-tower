@@ -33,8 +33,8 @@ OWASP_LLM_TOP10_2025: list[dict] = [
         "mitre_atlas": "AML.T0051",
     },
     {
-        "id": "LLM02",
-        "name": "Insecure Output Handling",
+        "id": "LLM05",
+        "name": "Improper Output Handling",
         "description": "Trusting LLM output without validation in downstream systems.",
         "controls": [
             "Output guardrails: PII scan, toxicity check, format validation",
@@ -45,7 +45,7 @@ OWASP_LLM_TOP10_2025: list[dict] = [
         "mitre_atlas": "AML.T0048",
     },
     {
-        "id": "LLM04",
+        "id": "LLM10",
         "name": "Output Handling (Model DoS/Resource)",
         "description": "Excessive resource consumption or denial-of-service via prompts.",
         "controls": [
@@ -58,7 +58,7 @@ OWASP_LLM_TOP10_2025: list[dict] = [
         "mitre_atlas": "AML.T0029",
     },
     {
-        "id": "LLM06",
+        "id": "LLM02",
         "name": "Sensitive Information Disclosure",
         "description": "LLM reveals PII, credentials, or confidential data.",
         "controls": [
@@ -72,7 +72,7 @@ OWASP_LLM_TOP10_2025: list[dict] = [
         "mitre_atlas": "AML.T0024",
     },
     {
-        "id": "LLM07",
+        "id": "LLM06",
         "name": "Excessive Agency",
         "description": "LLM with too many capabilities, permissions, or autonomy.",
         "controls": [
@@ -86,7 +86,7 @@ OWASP_LLM_TOP10_2025: list[dict] = [
         "mitre_atlas": "AML.T0040",
     },
     {
-        "id": "LLM08",
+        "id": "LLM04",
         "name": "Data and Model Poisoning",
         "description": "Compromised training data or retrieval corpus.",
         "controls": [

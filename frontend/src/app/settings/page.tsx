@@ -73,7 +73,7 @@ export default function SettingsPage() {
               <span className="text-sm font-medium text-gray-900">SHA-256</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">WORM Compliance</span>
+              <span className="text-sm text-gray-600">Immutability (Object Lock)</span>
               <span className="text-sm font-medium text-gray-900">Enabled</span>
             </div>
           </div>

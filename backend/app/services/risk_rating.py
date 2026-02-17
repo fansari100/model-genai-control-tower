@@ -145,7 +145,7 @@ def _identify_owasp_llm_risks(
     if handles_pii:
         risks.append("LLM06_Sensitive_Information_Disclosure")
     if uses_agents or uses_tools:
-        risks.append("LLM07_Excessive_Agency")
+        risks.append("LLM06_Excessive_Agency")
         risks.append("LLM04_Output_Handling")
     if client_facing:
         risks.append("LLM09_Misinformation")

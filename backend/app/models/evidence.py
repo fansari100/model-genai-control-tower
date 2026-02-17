@@ -68,7 +68,7 @@ class EvidenceArtifact(Base, TimestampMixin, AuditMixin):
     content_type: Mapped[str] = mapped_column(String(100), default="application/json")
     size_bytes: Mapped[int | None] = mapped_column(Integer)
 
-    # WORM compliance
+    # Immutability controls
     retention_tag: Mapped[RetentionTag] = mapped_column(
         SAEnum(RetentionTag, name="retention_tag", native_enum=False),
         default=RetentionTag.STANDARD,

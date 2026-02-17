@@ -4,7 +4,7 @@ Evidence service – content-addressed artifact storage with hash chain.
 Implements:
 - SHA-256 content addressing
 - Hash chain for tamper evidence
-- MinIO / S3 storage with WORM option
+- MinIO / S3 storage with Object Lock (GOVERNANCE mode)
 - Retention policy enforcement
 """
 
