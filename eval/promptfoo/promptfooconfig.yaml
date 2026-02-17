@@ -14,24 +14,14 @@
 description: "Control Tower – GenAI Use Case Evaluation Suite"
 
 # ── Providers (models under test) ────────────────────────────
+# Note: Requires OPENAI_API_KEY env var. Gemini requires GOOGLE_API_KEY.
+# CI validates config syntax only; live evals run on-demand with keys set.
 providers:
-  - id: openai:gpt-5.2
+  - id: openai:chat:gpt-5.2
     label: "GPT-5.2 (Primary)"
     config:
       temperature: 0
-      max_tokens: 2048
-
-  - id: openai:gpt-5.2-mini
-    label: "GPT-5.2-mini (Cost-optimized)"
-    config:
-      temperature: 0
-      max_tokens: 2048
-
-  - id: vertex:gemini-3-pro
-    label: "Gemini 3 Pro (Google)"
-    config:
-      temperature: 0
-      maxOutputTokens: 2048
+      max_completion_tokens: 2048
 
 # ── Prompts ──────────────────────────────────────────────────
 prompts:

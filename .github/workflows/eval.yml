@@ -1,14 +1,23 @@
 ########################################################################
-# Control Tower – Evaluation Pipeline
+# Control Tower - Evaluation Pipeline
 ########################################################################
-# Runs GenAI evaluations on schedule and on-demand.
-# Includes promptfoo quality/red-team evals.
+# Two modes:
+#   1. CI (push/PR): Validates eval config syntax only (no API key needed)
+#   2. On-demand / Schedule: Runs live evals (requires OPENAI_API_KEY secret)
 ########################################################################
 name: Evaluation Suite
 
 on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "eval/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "eval/**"
   schedule:
-    - cron: "0 6 * * 1-5"  # Weekdays at 6am UTC
+    - cron: "0 6 * * 1-5"
   workflow_dispatch:
     inputs:
       eval_type:
@@ -20,51 +29,98 @@ on:
           - redteam
           - all
 
-env:
-  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
 jobs:
-  # ── Quality Evaluation ───────────────────────────────────
+  # -- Config Validation (always runs, no API key needed) ----
+  validate-config:
+    name: Validate Eval Configs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify prompt files exist
+        run: |
+          test -f eval/promptfoo/prompts/assistant_qa.txt
+          test -f eval/promptfoo/prompts/debrief_summarizer.txt
+          echo "All prompt template files present"
+      - name: Validate YAML syntax
+        run: |
+          python3 -c "import yaml; yaml.safe_load(open('eval/promptfoo/promptfooconfig.yaml'))"
+          python3 -c "import yaml; yaml.safe_load(open('eval/promptfoo/redteam/redteam_config.yaml'))"
+          echo "All YAML configs valid"
+
+  # -- Quality Evaluation (requires OPENAI_API_KEY) ----------
   quality-eval:
     name: Quality & Correctness Eval
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.eval_type == 'quality' || github.event.inputs.eval_type == 'all' || github.event_name == 'schedule' }}
+    needs: validate-config
+    if: >-
+      (github.event.inputs.eval_type == 'quality' ||
+       github.event.inputs.eval_type == 'all' ||
+       github.event_name == 'schedule') &&
+      github.event_name != 'push' &&
+      github.event_name != 'pull_request'
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Check API key
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::warning::OPENAI_API_KEY not set. Skipping live eval."
+            exit 0
+          fi
       - name: Run promptfoo quality eval
+        if: env.OPENAI_API_KEY != ''
         run: |
           cd eval/promptfoo
-          npx promptfoo@latest eval \
+          npx --yes promptfoo@latest eval \
             --config promptfooconfig.yaml \
             --output results/quality_$(date +%Y%m%d).json \
             --no-cache
       - name: Upload results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: quality-eval-results
           path: eval/promptfoo/results/
+          if-no-files-found: ignore
 
-  # ── Red Team Evaluation ──────────────────────────────────
+  # -- Red Team Evaluation (requires OPENAI_API_KEY) ---------
   redteam-eval:
     name: Red Team Adversarial Eval
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.eval_type == 'redteam' || github.event.inputs.eval_type == 'all' }}
+    needs: validate-config
+    if: >-
+      (github.event.inputs.eval_type == 'redteam' ||
+       github.event.inputs.eval_type == 'all') &&
+      github.event_name != 'push' &&
+      github.event_name != 'pull_request'
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Check API key
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::warning::OPENAI_API_KEY not set. Skipping live eval."
+            exit 0
+          fi
       - name: Run promptfoo red team
+        if: env.OPENAI_API_KEY != ''
         run: |
           cd eval/promptfoo
-          npx promptfoo@latest redteam run \
+          npx --yes promptfoo@latest redteam run \
             --config redteam/redteam_config.yaml \
             --output results/redteam_$(date +%Y%m%d).json
       - name: Upload results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: redteam-eval-results
           path: eval/promptfoo/results/
+          if-no-files-found: ignore
