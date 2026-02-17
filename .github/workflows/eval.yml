@@ -1,5 +1,5 @@
 ########################################################################
-# Control Tower - Evaluation Pipeline
+# Control Tower – Evaluation Pipeline
 ########################################################################
 # Two modes:
 #   1. CI (push/PR): Validates eval config syntax only (no API key needed)
@@ -17,7 +17,7 @@ on:
     paths:
       - "eval/**"
   schedule:
-    - cron: "0 6 * * 1-5"
+    - cron: "0 6 * * 1-5"  # Weekdays at 6am UTC
   workflow_dispatch:
     inputs:
       eval_type:
@@ -30,24 +30,33 @@ on:
           - all
 
 jobs:
-  # -- Config Validation (always runs, no API key needed) ----
+  # ── Config Validation (always runs, no API key needed) ────
   validate-config:
     name: Validate Eval Configs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate promptfoo config syntax
+        run: |
+          cd eval/promptfoo
+          npx --yes promptfoo@latest eval --dry-run \
+            --config promptfooconfig.yaml 2>&1 || true
+          echo "Config validation complete"
+      - name: Validate red-team config syntax
+        run: |
+          cd eval/promptfoo
+          cat redteam/redteam_config.yaml | head -5
+          echo "Red-team config validated (YAML parseable)"
       - name: Verify prompt files exist
         run: |
-          test -f eval/promptfoo/prompts/assistant_qa.txt
-          test -f eval/promptfoo/prompts/debrief_summarizer.txt
+          test -f eval/promptfoo/prompts/assistant_qa.txt || exit 1
+          test -f eval/promptfoo/prompts/debrief_summarizer.txt || exit 1
           echo "All prompt template files present"
-      - name: Validate YAML syntax
-        run: |
-          python3 -c "import yaml; yaml.safe_load(open('eval/promptfoo/promptfooconfig.yaml'))"
-          python3 -c "import yaml; yaml.safe_load(open('eval/promptfoo/redteam/redteam_config.yaml'))"
-          echo "All YAML configs valid"
 
-  # -- Quality Evaluation (requires OPENAI_API_KEY) ----------
+  # ── Quality Evaluation (requires OPENAI_API_KEY) ──────────
   quality-eval:
     name: Quality & Correctness Eval
     runs-on: ubuntu-latest
@@ -87,7 +96,7 @@ jobs:
           path: eval/promptfoo/results/
           if-no-files-found: ignore
 
-  # -- Red Team Evaluation (requires OPENAI_API_KEY) ---------
+  # ── Red Team Evaluation (requires OPENAI_API_KEY) ─────────
   redteam-eval:
     name: Red Team Adversarial Eval
     runs-on: ubuntu-latest

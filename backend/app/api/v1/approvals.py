@@ -69,7 +69,23 @@ async def create_approval(
     """
     Record an approval decision with tamper-evident hash.
     Requires approver role (model_risk_officer, business_line_head, or admin).
+
+    Enforces Separation of Duties (SR 11-7 effective challenge):
+    - Approver cannot be the entity owner (SoD-001)
     """
+    # ── SoD Check: approver cannot approve their own entity ──
+    if payload.use_case_id:
+        from app.models.genai_use_case import GenAIUseCase
+
+        use_case = await db.get(GenAIUseCase, payload.use_case_id)
+        if use_case and use_case.owner == user.username:
+            raise HTTPException(
+                status_code=403,
+                detail="Separation of Duties violation (SoD-001): "
+                "Entity owner cannot approve their own use case "
+                "(SR 11-7 effective challenge requirement)",
+            )
+
     approval = Approval(**payload.model_dump(), created_by=user.username, updated_by=user.username)
 
     # Generate tamper-evident hash of the decision record

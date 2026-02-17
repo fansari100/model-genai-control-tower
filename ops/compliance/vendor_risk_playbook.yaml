@@ -1,0 +1,274 @@
+########################################################################
+# Control Tower – Third-Party / Vendor Risk Management Playbook
+########################################################################
+# Comprehensive vendor risk management framework for all LLM providers
+# and third-party AI services used by the platform.
+#
+# Aligned with:
+#   - SR 11-7 (Vendor Model Risk Management)
+#   - OCC Bulletin 2013-29 (Third-Party Relationships)
+#   - FINRA Notice 21-29 (Cloud & Outsourcing)
+#   - NIST AI 600-1 (Third-Party AI Governance)
+########################################################################
+
+vendor_risk_playbook:
+  version: "1.0.0"
+  effective_date: "2026-02-01"
+  owner: "Model Risk Officer + Third-Party Risk Manager"
+  review_cadence: "semi-annual"
+  next_review: "2026-08-01"
+
+# ── Vendor Inventory ───────────────────────────────────────────────
+vendor_inventory:
+  - vendor_id: "v-openai"
+    name: "OpenAI"
+    legal_entity: "OpenAI OpCo LLC"
+    services_provided:
+      - "GPT-5.2 (primary LLM inference)"
+      - "text-embedding-3-large (document embeddings)"
+    contract_id: "VENDOR-OAI-2025"
+    data_processing_region: "US (Azure West US)"
+    risk_tier: "critical"
+    due_diligence_completed: "2025-06-15"
+    next_due_diligence: "2026-06-15"
+
+  - vendor_id: "v-anthropic"
+    name: "Anthropic"
+    legal_entity: "Anthropic PBC"
+    services_provided:
+      - "Claude Opus 4.6 (alternative LLM inference)"
+    contract_id: "VENDOR-ANT-2025"
+    data_processing_region: "US (AWS us-east-1)"
+    risk_tier: "high"
+    due_diligence_completed: "2025-09-01"
+    next_due_diligence: "2026-09-01"
+
+  - vendor_id: "v-google"
+    name: "Google DeepMind"
+    legal_entity: "Google LLC"
+    services_provided:
+      - "Gemini 3 Pro (multimodal LLM inference)"
+    contract_id: "VENDOR-GOOG-2026"
+    data_processing_region: "US (GCP us-central1)"
+    risk_tier: "high"
+    due_diligence_completed: "2026-01-10"
+    next_due_diligence: "2027-01-10"
+
+# ── Data Use Constraints ───────────────────────────────────────────
+data_use_constraints:
+  general_requirements:
+    - "No input data may be used for model training (contractually enforced)"
+    - "No input data may be stored beyond API processing window"
+    - "All data transmitted via TLS 1.3 minimum"
+    - "PII must be redacted BEFORE transmission to vendor APIs"
+    - "All vendor API calls logged with request/response hashes"
+
+  per_vendor:
+    openai:
+      data_retention_by_vendor: "Zero-retention API (opt-out confirmed)"
+      training_opt_out: "Confirmed via API parameter and org settings"
+      data_residency: "US only (Azure West US region lock)"
+      encryption_in_transit: "TLS 1.3"
+      encryption_at_rest: "AES-256 (Azure managed keys)"
+      contractual_clause: "Section 7.2 — No training on customer data"
+
+    anthropic:
+      data_retention_by_vendor: "Zero-retention API"
+      training_opt_out: "Confirmed via API usage policy"
+      data_residency: "US only (AWS us-east-1)"
+      encryption_in_transit: "TLS 1.3"
+      encryption_at_rest: "AES-256"
+      contractual_clause: "Section 5.1 — No training on API inputs"
+
+    google:
+      data_retention_by_vendor: "Zero-retention via Vertex AI enterprise tier"
+      training_opt_out: "Enterprise agreement — confirmed"
+      data_residency: "US only (GCP us-central1, configurable)"
+      encryption_in_transit: "TLS 1.3"
+      encryption_at_rest: "AES-256 (CMEK supported)"
+      contractual_clause: "Section 8.3 — Data processing addendum"
+
+# ── Model Change Notification ──────────────────────────────────────
+model_change_notification:
+  policy: >
+    All vendor model version changes, deprecations, or behavioral
+    modifications must be detected, assessed, and governed before
+    impacting production workflows.
+
+  detection_mechanisms:
+    - "Vendor changelog monitoring (automated RSS/webhook)"
+    - "Daily canary prompt execution (detects behavioral drift)"
+    - "Model version stamp comparison on every API response"
+    - "Vendor email notification subscription (all providers)"
+
+  response_procedures:
+    minor_version_change:
+      description: "Bug fixes, minor improvements (e.g., gpt-5.2-2025-12-11 → gpt-5.2-2026-01-15)"
+      response_time: "5 business days"
+      actions:
+        - "Run regression evaluation suite against new version"
+        - "Compare pass rates with baseline"
+        - "Update provider_model_id if pass rate within 2% of baseline"
+        - "Log version change in audit trail"
+      approval: "Model Control Analyst"
+
+    major_version_change:
+      description: "New model generation (e.g., GPT-5.2 → GPT-6)"
+      response_time: "30 business days"
+      actions:
+        - "Full evaluation suite (quality + safety + red-team)"
+        - "Updated risk assessment for affected use cases"
+        - "Vendor due diligence refresh"
+        - "Committee approval required before production deployment"
+        - "Parallel running period (minimum 2 weeks)"
+      approval: "Model Risk Officer + WM MRC"
+
+    model_deprecation:
+      description: "Vendor announces end-of-life for a model version"
+      response_time: "Migration plan within 10 business days"
+      actions:
+        - "Identify all use cases dependent on deprecated model"
+        - "Evaluate replacement model (full test suite)"
+        - "Migration plan with rollback capability"
+        - "Coordinate with business owners on timeline"
+        - "Update model registry and AIBOM"
+      approval: "Model Risk Officer"
+
+    behavioral_drift_detected:
+      description: "Canary prompts show > 5% deviation from baseline"
+      response_time: "24 hours"
+      actions:
+        - "Escalate to Model Risk Officer"
+        - "Run full evaluation suite"
+        - "Contact vendor support for explanation"
+        - "Consider fallback to rule-based mode if critical"
+        - "File finding (severity based on drift magnitude)"
+      approval: "Model Risk Officer"
+
+# ── Outage Handling ────────────────────────────────────────────────
+outage_handling:
+  policy: >
+    All vendor outages must be detected, communicated, and mitigated
+    within defined SLA windows. The platform is designed to remain
+    operational (degraded mode) during any single vendor outage.
+
+  detection:
+    - "HTTP 429/500/502/503 monitoring (Prometheus ct_http_requests_total)"
+    - "Latency spike detection (p99 > 10s threshold)"
+    - "Vendor status page monitoring (automated webhook)"
+    - "Health check endpoint probing (every 30s)"
+
+  response_by_severity:
+    partial_degradation:
+      description: "Elevated error rates (< 50% of requests failing)"
+      actions:
+        - "Automatic retry with exponential backoff (tenacity)"
+        - "Alert AI Platform Team (Slack + PagerDuty)"
+        - "Monitor for resolution"
+      user_impact: "Increased latency; most requests succeed"
+      fallback: "None needed — retries handle it"
+
+    full_outage:
+      description: "Vendor API completely unavailable"
+      actions:
+        - "All 5 model demos automatically fall back to rule-based mode"
+        - "Alert Model Risk Officer + AI Platform Team"
+        - "Update dashboard status indicator"
+        - "Contact vendor support"
+        - "Assess whether to switch to alternate provider (Anthropic/Google)"
+      user_impact: "Reduced output quality; all endpoints remain functional"
+      fallback: "Rule-based mode (deterministic, no API key needed)"
+
+    extended_outage:
+      description: "Vendor API unavailable > 4 hours"
+      actions:
+        - "Activate alternate provider failover (if configured)"
+        - "Notify business stakeholders"
+        - "Evaluate SLA breach and contractual remedies"
+        - "File incident report"
+      user_impact: "May switch to alternate LLM provider"
+      fallback: "Provider failover (Claude Opus 4.6 or Gemini 3 Pro)"
+
+  contractual_slas:
+    openai:
+      uptime_sla: "99.9%"
+      support_response: "< 1 hour (Enterprise tier)"
+      incident_notification: "Within 30 minutes of detection"
+    anthropic:
+      uptime_sla: "99.9%"
+      support_response: "< 2 hours"
+      incident_notification: "Within 1 hour"
+    google:
+      uptime_sla: "99.95%"
+      support_response: "< 15 minutes (Premium support)"
+      incident_notification: "Within 15 minutes"
+
+# ── Due Diligence Checklist ────────────────────────────────────────
+due_diligence_checklist:
+  security_certifications:
+    - item: "SOC 2 Type II report"
+      required: true
+      review_frequency: "annual"
+    - item: "ISO 27001 certification"
+      required: true
+      review_frequency: "annual"
+    - item: "FedRAMP authorization (if applicable)"
+      required: false
+      review_frequency: "annual"
+    - item: "Penetration test results"
+      required: true
+      review_frequency: "annual"
+
+  data_governance:
+    - item: "Data processing agreement (DPA)"
+      required: true
+    - item: "Training data opt-out confirmation"
+      required: true
+    - item: "Data residency documentation"
+      required: true
+    - item: "Sub-processor list and notification"
+      required: true
+    - item: "Right to audit clause"
+      required: true
+
+  operational_controls:
+    - item: "Incident response plan"
+      required: true
+    - item: "Business continuity plan"
+      required: true
+    - item: "Change management process"
+      required: true
+    - item: "Model versioning and deprecation policy"
+      required: true
+
+  ai_specific:
+    - item: "Model card / system card documentation"
+      required: true
+    - item: "Safety evaluation results (vendor-published)"
+      required: true
+    - item: "Content filtering / safety layer documentation"
+      required: true
+    - item: "Bias and fairness testing evidence"
+      required: true
+    - item: "Red-team evaluation methodology and results"
+      required: true
+
+# ── Evidence of Controls ───────────────────────────────────────────
+evidence_artifacts:
+  description: >
+    All vendor risk management evidence is stored as EvidenceArtifact
+    entities in the Control Tower evidence plane with 7-year retention.
+
+  artifact_types:
+    - "vendor_due_diligence_report"
+    - "vendor_soc2_report"
+    - "vendor_penetration_test"
+    - "vendor_dpa_agreement"
+    - "vendor_training_opt_out_confirmation"
+    - "vendor_model_change_notification"
+    - "vendor_outage_incident_report"
+    - "vendor_sla_compliance_report"
+
+  storage: "S3 (WORM, 7-year retention, SHA-256 content-addressed)"
+  index: "PostgreSQL evidence_artifacts table"
+  retrieval: "< 500ms for hot records, < 4h for archived"

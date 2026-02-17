@@ -1,0 +1,245 @@
+########################################################################
+# Control Tower – GenAI & Agentic AI Threat Model
+########################################################################
+# Structured threat model artifact for all GenAI use cases and
+# agentic workflows under governance.
+#
+# Methodology: STRIDE + OWASP LLM Top 10 (2025) + OWASP Agentic
+#              Top 10 (2026) + MITRE ATLAS
+#
+# Aligned with: NIST AI 600-1, SR 11-7, ISO 42001
+########################################################################
+
+threat_model:
+  version: "1.0.0"
+  last_reviewed: "2026-02-15"
+  next_review: "2026-05-15"
+  reviewed_by: "Model Risk Officer, CISO, AI Platform Lead"
+  methodology: "STRIDE + OWASP LLM/Agentic + MITRE ATLAS"
+
+# ── STRIDE Analysis ────────────────────────────────────────────────
+stride_threats:
+
+  spoofing:
+    - id: "S-001"
+      threat: "Prompt injection impersonating system instructions"
+      owasp_ref: "LLM01"
+      mitre_ref: "AML.T0051"
+      likelihood: "high"
+      impact: "high"
+      controls:
+        - "Input sanitization + guardrail cascade (lightweight filter → heavy classifier → human)"
+        - "System prompt isolation (not included in user-visible context)"
+        - "promptfoo red-team: 20 injection tests + 7 delivery strategies"
+      residual_risk: "medium"
+
+    - id: "S-002"
+      threat: "Agent identity spoofing (unregistered agent executing actions)"
+      owasp_ref: "ASI10"
+      likelihood: "medium"
+      impact: "critical"
+      controls:
+        - "agent_controls.rego: agent_registered check (mandatory)"
+        - "Agent registry with unique agent_id per workflow"
+        - "Kill switch capability (execution_context.kill_switch_active)"
+      residual_risk: "low"
+
+  tampering:
+    - id: "T-001"
+      threat: "Evidence artifact modification post-creation"
+      likelihood: "low"
+      impact: "critical"
+      controls:
+        - "SHA-256 content-addressed storage (content_hash)"
+        - "Hash chain linking (chain_hash = SHA-256(content + prev))"
+        - "S3 Object Lock (WORM, GOVERNANCE mode)"
+        - "Weekly integrity verification scan"
+      residual_risk: "very_low"
+
+    - id: "T-002"
+      threat: "Agent memory poisoning (injecting false context)"
+      owasp_ref: "ASI06"
+      mitre_ref: "AML.T0049"
+      likelihood: "medium"
+      impact: "high"
+      controls:
+        - "Memory write limit: max 10 writes per session"
+        - "Memory provenance tracking (source + timestamp required)"
+        - "Memory isolation between sessions (no cross-session access)"
+      residual_risk: "medium"
+
+  repudiation:
+    - id: "R-001"
+      threat: "Denial of approval decision or evaluation outcome"
+      likelihood: "medium"
+      impact: "high"
+      controls:
+        - "SHA-256 decision_hash on every approval record"
+        - "Immutable Kafka audit event stream"
+        - "Structured logging with request correlation IDs"
+        - "SEC 17a-4 compliant retention (7 years)"
+      residual_risk: "low"
+
+  information_disclosure:
+    - id: "I-001"
+      threat: "PII leakage in model outputs"
+      owasp_ref: "LLM06"
+      likelihood: "medium"
+      impact: "critical"
+      controls:
+        - "Presidio + regex PII detection on all outputs"
+        - "PII redaction before structured logging"
+        - "promptfoo PII evaluation suite (direct, session, social)"
+        - "Data classification enforcement (OPA data_classification.rego)"
+      residual_risk: "low"
+
+    - id: "I-002"
+      threat: "Training data extraction via adversarial prompts"
+      owasp_ref: "LLM06"
+      mitre_ref: "AML.T0024"
+      likelihood: "low"
+      impact: "high"
+      controls:
+        - "garak leakreplay probes (LiteratureComplete80, GuardianComplete)"
+        - "No fine-tuning on PII/confidential data"
+        - "Vendor data use constraints (see vendor_risk_playbook)"
+      residual_risk: "low"
+
+  denial_of_service:
+    - id: "D-001"
+      threat: "Agent cascading failures (infinite loops, resource exhaustion)"
+      owasp_ref: "ASI08"
+      likelihood: "medium"
+      impact: "high"
+      controls:
+        - "Tool call limit: 5 per turn"
+        - "Retry limit: 3 maximum"
+        - "Temporal workflow timeout: 30 minutes"
+        - "Circuit breaker on LLM provider calls (tenacity)"
+        - "AWS WAF rate limiting (configurable per IP)"
+      residual_risk: "low"
+
+  elevation_of_privilege:
+    - id: "E-001"
+      threat: "Agent tool misuse (calling unauthorized tools)"
+      owasp_ref: "ASI02"
+      likelihood: "medium"
+      impact: "critical"
+      controls:
+        - "Tool allowlist (7 approved tools in agent_controls.rego)"
+        - "Blocked tool logging with alert"
+        - "Dangerous pattern blocklist (eval, exec, subprocess, shell, cmd)"
+        - "IRSA pod-level IAM (no static credentials)"
+      residual_risk: "low"
+
+    - id: "E-002"
+      threat: "Excessive agency — model performing actions beyond scope"
+      owasp_ref: "LLM07"
+      likelihood: "medium"
+      impact: "high"
+      controls:
+        - "Human-in-the-loop flag (requires_human_in_loop on use case)"
+        - "OPA approval gates (risk-tier-based thresholds)"
+        - "Structured output enforcement (Pydantic models)"
+        - "Scope boundary testing (promptfoo operational controls)"
+      residual_risk: "medium"
+
+# ── Agent Sandbox Architecture ─────────────────────────────────────
+agent_sandbox:
+  description: >
+    All agentic AI workflows execute within a sandboxed environment
+    that enforces strict isolation, resource limits, and egress controls.
+
+  execution_isolation:
+    container: "Dedicated Kubernetes pod per agent execution"
+    namespace: "control-tower-agents (isolated namespace)"
+    service_account: "ct-agent-runner (minimal IRSA permissions)"
+    network_policy: "Deny all ingress/egress except explicitly allowed"
+    seccomp_profile: "RuntimeDefault"
+    read_only_root_fs: true
+    run_as_non_root: true
+
+  egress_controls:
+    allowed_destinations:
+      - "api.openai.com:443 (LLM inference)"
+      - "control-tower-backend.control-tower.svc:8000 (internal API)"
+      - "minio.control-tower.svc:9000 (evidence storage)"
+    denied_by_default: true
+    dns_policy: "ClusterFirst (no external DNS resolution)"
+    internet_access: "Blocked except LLM provider endpoints"
+
+  resource_quotas:
+    cpu_limit: "2000m per agent execution"
+    memory_limit: "4Gi per agent execution"
+    ephemeral_storage: "1Gi"
+    max_execution_time: "30 minutes (Temporal workflow timeout)"
+    max_concurrent_agents: 10
+
+  token_and_cost_quotas:
+    max_tokens_per_request: 4096
+    max_tokens_per_session: 32768
+    max_cost_per_session_usd: 5.00
+    max_cost_per_day_usd: 500.00
+    cost_tracking: "Token count + cost_usd logged per EvaluationResult"
+    budget_alert_threshold_pct: 80
+    budget_hard_stop_pct: 100
+
+  tool_call_limits:
+    max_calls_per_turn: 5
+    max_calls_per_session: 50
+    max_retries_per_call: 3
+    timeout_per_call_seconds: 30
+
+# ── Agent Abuse Incident Playbook ──────────────────────────────────
+agent_abuse_playbook:
+  description: >
+    Incident response procedures for agent-related security events,
+    including goal hijacking, tool misuse, and runaway execution.
+
+  severity_levels:
+    - level: "P1 — Critical"
+      examples:
+        - "Agent executing unauthorized tools (ASI02 violation)"
+        - "Dangerous execution pattern detected (ASI05 — eval/exec/shell)"
+        - "PII exfiltration via agent tool calls"
+      response_time: "15 minutes"
+      actions:
+        - "Activate agent kill switch immediately"
+        - "Isolate affected namespace (kubectl cordon)"
+        - "Preserve all logs and evidence artifacts"
+        - "Notify model-risk-officer and CISO"
+        - "File finding (severity: critical, source: incident)"
+        - "Block affected agent_id in agent registry"
+      escalation: "CISO → CRO → Legal (if PII involved)"
+
+    - level: "P2 — High"
+      examples:
+        - "Agent exceeding tool call limits (ASI08)"
+        - "Memory write limit exceeded (ASI06)"
+        - "Unregistered agent detected (ASI10)"
+      response_time: "1 hour"
+      actions:
+        - "Activate kill switch for affected agent"
+        - "Review agent execution logs and tool call history"
+        - "Update allowlist/blocklist if new pattern detected"
+        - "File finding (severity: high, source: monitoring)"
+      escalation: "Model Risk Officer → Technology Risk Director"
+
+    - level: "P3 — Medium"
+      examples:
+        - "Agent approaching token/cost quota (80% threshold)"
+        - "Unexpected agent behavior (output quality degradation)"
+        - "Tool call latency exceeding SLO"
+      response_time: "4 hours"
+      actions:
+        - "Review agent configuration and prompt templates"
+        - "Adjust quotas if legitimate usage increase"
+        - "Log as monitoring observation"
+      escalation: "AI Platform Team Lead"
+
+  post_incident:
+    - "Complete root cause analysis within 5 business days"
+    - "Update threat model with new threat/control"
+    - "Update agent_controls.rego if policy gap identified"
+    - "Add regression test to evaluation suite"
+    - "Present findings to WM Model Risk Committee"

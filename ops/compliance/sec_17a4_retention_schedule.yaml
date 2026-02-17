@@ -1,0 +1,176 @@
+########################################################################
+# Control Tower – SEC 17a-4 Recordkeeping & Retention Schedule
+########################################################################
+# Defines broker-dealer-grade retention requirements for all evidence
+# artifacts, prompt/output logs, and governance records.
+#
+# Aligned with:
+#   - SEC Rule 17a-4 (Records to be preserved by certain exchange members)
+#   - FINRA Rule 3110 (Supervision)
+#   - FINRA Rule 4511 (General requirements for books and records)
+#   - NIST AI 600-1 (Content Provenance)
+#   - SR 11-7 (Model Risk Management)
+########################################################################
+
+retention_policy:
+  version: "1.0.0"
+  effective_date: "2026-02-01"
+  approved_by: "Chief Compliance Officer"
+  review_cadence: "annual"
+
+# ── Retention Schedule ─────────────────────────────────────────────
+# Each category maps to SEC 17a-4 paragraph references.
+retention_schedule:
+
+  # 17a-4(b)(1) — Communications related to business
+  genai_prompt_output_logs:
+    description: "All prompts sent to and outputs received from GenAI models"
+    retention_years: 7
+    retention_mode: "GOVERNANCE"     # S3 Object Lock mode
+    first_2_years: "COMPLIANCE"      # 17a-4 requires first 2 years in readily accessible location
+    storage_tier_after_2y: "GLACIER_DEEP_ARCHIVE"
+    includes:
+      - "Input prompts (with PII redacted)"
+      - "Model outputs (complete response)"
+      - "Model version identifier (provider_model_id)"
+      - "Timestamp (ISO 8601, UTC)"
+      - "Request correlation ID (X-Request-ID)"
+      - "User/session context (authenticated principal)"
+    index_fields: ["timestamp", "model_id", "use_case_id", "user_id", "request_id"]
+    searchable: true
+    immutability: "WORM (Write-Once-Read-Many via S3 Object Lock)"
+
+  # 17a-4(b)(4) — Records of all transactions
+  approval_records:
+    description: "All governance approval decisions with decision_hash (tamper-evident)"
+    retention_years: 7
+    retention_mode: "GOVERNANCE"
+    includes:
+      - "Gate type, decision, approver chain"
+      - "Rationale and conditions"
+      - "Policy engine input/output (OPA decision log)"
+      - "SHA-256 decision_hash"
+      - "Timestamp and approver identity"
+    index_fields: ["timestamp", "use_case_id", "approver_name", "decision", "gate_type"]
+    searchable: true
+    immutability: "SHA-256 decision_hash + hash chain"
+
+  # 17a-4(b)(7) — Supervision and compliance records
+  certification_packs:
+    description: "Complete certification evidence packs (8-section, PDF + JSON)"
+    retention_years: 7
+    retention_mode: "GOVERNANCE"
+    includes:
+      - "Use case summary & risk assessment"
+      - "NIST AI 600-1 profile mapping"
+      - "OWASP risk mapping"
+      - "Test results with pass rates"
+      - "Findings register"
+      - "Approval record with hash chain"
+      - "Monitoring plan"
+      - "ISO 42001 PDCA mapping"
+    index_fields: ["pack_id", "use_case_id", "generated_at", "overall_status"]
+    searchable: true
+    immutability: "WORM + SHA-256 content hash"
+
+  # SR 11-7 — Model validation artifacts
+  evaluation_results:
+    description: "All evaluation run results, red-team reports, vulnerability scans"
+    retention_years: 7
+    retention_mode: "GOVERNANCE"
+    includes:
+      - "Evaluation run metadata (type, status, duration)"
+      - "Individual test case results (input, output, score, passed)"
+      - "Aggregate scores and OWASP category results"
+      - "Red-team attack results (plugin, strategy, outcome)"
+      - "Vulnerability scan findings"
+    index_fields: ["run_id", "use_case_id", "model_id", "eval_type", "timestamp"]
+    searchable: true
+    immutability: "WORM"
+
+  # SR 11-7 — Findings and remediation
+  findings_register:
+    description: "All findings with remediation history and status changes"
+    retention_years: 7
+    retention_mode: "GOVERNANCE"
+    includes:
+      - "Finding details (title, severity, source, OWASP/MITRE mapping)"
+      - "Status change audit trail"
+      - "Remediation plan and completion evidence"
+      - "Linked evidence artifact IDs"
+    index_fields: ["finding_id", "severity", "status", "use_case_id", "owasp_risk_id"]
+    searchable: true
+    immutability: "Append-only with hash chain"
+
+  # FINRA 4511 — General books and records
+  audit_event_stream:
+    description: "Kafka/Redpanda audit event stream (all governance actions)"
+    retention_years: 7
+    retention_mode: "GOVERNANCE"
+    storage: "MSK Kafka with log.retention.hours=168 (hot) + S3 archive (cold)"
+    includes:
+      - "All API requests (method, path, user, timestamp)"
+      - "All status transitions"
+      - "All approval decisions"
+      - "All evidence artifact creations"
+      - "All evaluation triggers and completions"
+    index_fields: ["event_type", "timestamp", "entity_id", "user_id"]
+    searchable: true
+    immutability: "Kafka immutable log + S3 WORM archive"
+
+  # Model inventory and version history
+  model_inventory:
+    description: "Model registration, version history, and AIBOM artifacts"
+    retention_years: "permanent"
+    retention_mode: "GOVERNANCE"
+    includes:
+      - "Model metadata (name, version, type, deployment, risk tier)"
+      - "Provider model ID and version tracking"
+      - "AIBOM (AI Bill of Materials) JSON artifacts"
+      - "Status transition history"
+    index_fields: ["model_id", "name", "provider_model_id", "status"]
+    searchable: true
+    immutability: "Soft-delete only (never hard-deleted)"
+
+# ── Retrieval & Indexing ───────────────────────────────────────────
+retrieval:
+  primary_index: "PostgreSQL 17 (full-text search + pgvector)"
+  secondary_index: "S3 Select + Athena for archived records"
+  search_capabilities:
+    - "Full-text search across all indexed fields"
+    - "Date range queries (ISO 8601)"
+    - "Entity-based lookup (model_id, use_case_id, finding_id)"
+    - "OWASP/MITRE category filtering"
+    - "Approver/user-based audit trail reconstruction"
+  retrieval_sla:
+    hot_records: "< 500ms (PostgreSQL, last 2 years)"
+    cold_records: "< 4 hours (S3 Glacier Deep Archive)"
+    regulatory_request: "24 hours for full reconstruction"
+
+# ── Immutability Enforcement ───────────────────────────────────────
+immutability:
+  mechanism: "S3 Object Lock (GOVERNANCE mode)"
+  hash_algorithm: "SHA-256"
+  hash_chain: "Each artifact chain_hash = SHA-256(content_hash + previous_chain_hash)"
+  verification:
+    on_read: "Content hash verified against stored hash on every retrieval"
+    periodic: "Weekly integrity scan of all evidence artifacts"
+    alert_on_mismatch: "Immediate PagerDuty alert to model-risk-officer"
+  tamper_evidence:
+    - "SHA-256 content-addressed storage (content_hash)"
+    - "Hash chain linking (chain_hash = SHA-256(content + prev_chain))"
+    - "S3 Object Lock prevents deletion/modification"
+    - "Versioning enabled for all evidence buckets"
+    - "CloudTrail logging for all S3 API calls"
+
+# ── Destruction Policy ─────────────────────────────────────────────
+destruction:
+  policy: "No evidence may be destroyed before retention period expires"
+  exceptions: "Legal hold overrides all retention schedules"
+  legal_hold:
+    mechanism: "S3 Object Lock Legal Hold flag"
+    authorized_by: "General Counsel or Chief Compliance Officer"
+  post_retention:
+    process: "Automated lifecycle policy transitions to deletion"
+    approval: "CCO sign-off required for destruction of regulatory records"
+    audit_trail: "Destruction events logged to immutable audit stream"
