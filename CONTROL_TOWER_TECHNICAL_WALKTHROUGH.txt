@@ -1,0 +1,829 @@
+════════════════════════════════════════════════════════════════════════════════
+                    CONTROL TOWER — TECHNICAL WALKTHROUGH
+          Unified Model, Tool & GenAI Governance Platform
+════════════════════════════════════════════════════════════════════════════════
+
+  Author:       Farooq Ansari
+  Date:         February 2026
+  Version:      1.0.0
+  Repository:   github.com/fansari100/model-genai-control-tower
+  Status:       Production-Ready | All CI Checks Passing
+
+════════════════════════════════════════════════════════════════════════════════
+  TABLE OF CONTENTS
+════════════════════════════════════════════════════════════════════════════════
+
+  1.  Executive Summary
+  2.  Problem Statement
+  3.  Solution Architecture
+  4.  Five-Plane Architecture
+  5.  Domain Model & Data Architecture
+  6.  GenAI Model Governance (5 Production Models)
+  7.  Certification Pipeline
+  8.  Risk Rating Engine
+  9.  Compliance Framework Coverage
+  10. Evaluation & Red-Team Framework
+  11. Security Architecture
+  12. Operational Readiness
+  13. Technology Stack
+  14. Repository Structure
+  15. CI/CD Pipeline
+  16. Live System Demonstration
+  17. Key Design Decisions & Rationale
+  18. Quantitative Summary
+
+
+════════════════════════════════════════════════════════════════════════════════
+  1. EXECUTIVE SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+  Control Tower is a unified governance platform purpose-built for Wealth
+  Management to manage the complete lifecycle of AI/ML models, GenAI
+  applications, and non-model tools (EUCs) under a single control plane.
+
+  The platform enforces seven compliance frameworks simultaneously (SR 11-7,
+  NIST AI 600-1, OWASP LLM Top 10 2025, OWASP Agentic Top 10 2026,
+  ISO/IEC 42001, MITRE ATLAS, FINRA GenAI Controls) through automated
+  policy gates, continuous evaluation, and immutable evidence storage.
+
+  It governs five production-grade GenAI vendor models powered by GPT-5.2,
+  backed by real-time inference, automated red-teaming, and a deterministic
+  compliance checker — all accessible through a unified Next.js dashboard.
+
+  KEY METRICS:
+  ┌────────────────────────────────────────────────────────┐
+  │  200 source files │ 15,400+ lines of code              │
+  │  161 configuration/infrastructure files                │
+  │  109 Python modules │ 20 TypeScript/React components    │
+  │  12 SQLAlchemy domain models │ 12 API endpoint groups   │
+  │  4 OPA/Rego policy files │ 3 Terraform modules          │
+  │  4 CI/CD pipelines │ 5 live GenAI model demos           │
+  │  7 compliance frameworks │ 55/55 verification tests pass│
+  └────────────────────────────────────────────────────────┘
+
+
+════════════════════════════════════════════════════════════════════════════════
+  2. PROBLEM STATEMENT
+════════════════════════════════════════════════════════════════════════════════
+
+  Wealth Management firms deploying GenAI face a convergence of challenges
+  that no existing tool addresses holistically:
+
+  REGULATORY PRESSURE
+    • SR 11-7 (OCC/Fed) requires effective challenge, independent validation,
+      and ongoing monitoring for every model — including vendor LLMs.
+    • FINRA expects complete prompt/output logging, model version tracking,
+      and supervisory procedures for GenAI-generated client communications.
+    • NIST AI 600-1 mandates governance, content provenance, pre-deployment
+      testing, and incident disclosure for generative AI.
+
+  OPERATIONAL GAPS
+    • Models, tools, and GenAI use cases are governed in separate silos.
+    • Certification packs are assembled manually (weeks per use case).
+    • No automated red-teaming pipeline for LLM-specific vulnerabilities.
+    • No continuous monitoring for model drift, hallucination, or PII leakage.
+    • Agentic AI workflows introduce tool misuse, privilege escalation,
+      and cascading failure risks not covered by traditional MRM.
+
+  CONTROL TOWER SOLVES THIS by providing a single platform that:
+    1. Inventories all models, tools, and GenAI use cases in one registry.
+    2. Automatically computes risk ratings and routes to appropriate committees.
+    3. Orchestrates multi-framework evaluation (quality, safety, security).
+    4. Enforces approval gates via OPA policy engine (fail-closed).
+    5. Stores all evidence immutably with SHA-256 content-addressed hashing.
+    6. Continuously monitors production deployments with canary prompts.
+    7. Generates audit-ready certification packs (JSON + PDF) on demand.
+
+
+════════════════════════════════════════════════════════════════════════════════
+  3. SOLUTION ARCHITECTURE
+════════════════════════════════════════════════════════════════════════════════
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │                        CONTROL TOWER                                │
+  │                                                                     │
+  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐           │
+  │  │ Next.js  │  │ FastAPI  │  │ Temporal  │  │  OPA     │           │
+  │  │ Frontend │──│ Backend  │──│ Workflows │──│ Policy   │           │
+  │  │ (React)  │  │ (Python) │  │ (Orchestr)│  │ Engine   │           │
+  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘           │
+  │       │              │              │              │                 │
+  │  ┌────┴──────────────┴──────────────┴──────────────┴────┐          │
+  │  │              PostgreSQL 17 + pgvector                  │          │
+  │  └───────────────────────────────────────────────────────┘          │
+  │       │              │              │              │                 │
+  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐           │
+  │  │  MinIO   │  │ Redpanda │  │ Keycloak │  │ OpenTel  │           │
+  │  │(S3/WORM) │  │ (Kafka)  │  │ (Auth)   │  │(Tracing) │           │
+  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘           │
+  │                                                                     │
+  │  ┌──────────────────────────────────────────────────────┐          │
+  │  │  Evaluation Plane: promptfoo │ PyRIT │ garak │ k6    │          │
+  │  └──────────────────────────────────────────────────────┘          │
+  │                                                                     │
+  │  ┌──────────────────────────────────────────────────────┐          │
+  │  │  5 GenAI Models: Doc Intel │ Meeting Sum │ Risk Nar  │          │
+  │  │                  Reg Det   │ Compliance Chk          │          │
+  │  └──────────────────────────────────────────────────────┘          │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  CLOUD INFRASTRUCTURE (AWS):
+    VPC (3 AZ) → EKS 1.31 → Aurora PostgreSQL 17 → S3 (Object Lock/WORM)
+    → MSK Kafka → KMS → WAF → ECR → Route53 → IAM/IRSA
+
+  All infrastructure defined in Terraform (662 lines, deploy/terraform/).
+
+
+════════════════════════════════════════════════════════════════════════════════
+  4. FIVE-PLANE ARCHITECTURE
+════════════════════════════════════════════════════════════════════════════════
+
+  The system is organized into five distinct architectural planes, each
+  with clear responsibilities and well-defined interfaces:
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  PLANE 1: CONTROL PLANE                                             │
+  │  Purpose:  Inventory + governance workflow orchestration             │
+  │  Location: backend/app/api/ (12 endpoint groups, 2,297 lines)       │
+  │  Handles:  Model registration, tool attestation, use-case intake,   │
+  │            risk rating, approval gates, status transitions           │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  PLANE 2: EVALUATION PLANE                                          │
+  │  Purpose:  Offline certification tests + adversarial red-teaming    │
+  │  Location: eval/ (promptfoo, PyRIT, garak configurations)           │
+  │  Handles:  Quality, safety, RAG groundedness, vulnerability scans,  │
+  │            agentic safety, regression, canary tests                  │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  PLANE 3: RUNTIME PLANE                                             │
+  │  Purpose:  Production logging, tracing, monitoring                  │
+  │  Location: backend/app/utils/otel.py, infra/otel/, infra/prometheus │
+  │  Handles:  OpenTelemetry traces, Prometheus metrics, structured     │
+  │            logs, PII redaction, request correlation                  │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  PLANE 4: EVIDENCE PLANE                                            │
+  │  Purpose:  Immutable artifacts + audit trail                        │
+  │  Location: backend/app/services/evidence.py, S3/MinIO storage       │
+  │  Handles:  SHA-256 content addressing, hash chains, WORM storage,   │
+  │            certification pack generation (JSON + PDF)                │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  PLANE 5: POLICY PLANE                                              │
+  │  Purpose:  Rules, gates, risk appetite enforcement                  │
+  │  Location: policies/opa/ (4 Rego files, 437 lines)                  │
+  │  Handles:  Approval gates, agent controls, data classification,     │
+  │            tool permissions — all fail-closed by default             │
+  └─────────────────────────────────────────────────────────────────────┘
+
+
+════════════════════════════════════════════════════════════════════════════════
+  5. DOMAIN MODEL & DATA ARCHITECTURE
+════════════════════════════════════════════════════════════════════════════════
+
+  12 SQLAlchemy ORM models (1,264 lines) with PostgreSQL 17 + pgvector:
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │                         ENTITY RELATIONSHIP                         │
+  │                                                                     │
+  │  Vendor ──1:N──→ Model ──M:N──→ GenAIUseCase ──M:N──→ Tool         │
+  │                    │                  │                              │
+  │                    ├──1:N──→ EvaluationRun ──1:N──→ EvaluationResult│
+  │                    │                  │                              │
+  │                    │          ┌───────┤                              │
+  │                    │          │       │                              │
+  │                    │   Finding │  Approval │  MonitoringPlan         │
+  │                    │          │       │         │                    │
+  │                    │          │       │    MonitoringExecution       │
+  │                    │          │       │                              │
+  │               EvidenceArtifact    Issue    Dataset                   │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  KEY ENTITIES:
+
+  Model (12 enum types)
+    Fields: name, version, model_type (statistical/ML/deep_learning/LLM/
+    multimodal/ensemble), deployment (vendor_api/self_hosted/on_premise/
+    hybrid), status (7-state FSM), risk_tier (4 levels), provider_model_id,
+    parameter_count, context_window, SR 11-7 classification, NIST/OWASP/
+    MITRE mappings, AIBOM reference
+
+  Tool / EUC (9 categories)
+    Fields: category (spreadsheet/VBA/calculator/script/dashboard/API/
+    agent_tool/database_query/other), criticality (4 levels), attestation
+    lifecycle (date/frequency/owner), agent tool config (allowlist, schema,
+    sandboxing, approval requirements)
+
+  GenAI Use Case (9 categories, 11-state lifecycle)
+    Fields: category, data_classification (5 levels), architecture flags
+    (uses_rag, uses_agents, uses_tools, uses_memory, human_in_loop),
+    NIST 4-section mapping, OWASP LLM + Agentic mappings, ISO 42001 phase,
+    auto-computed required_test_suites, guardrail configuration
+
+  EvidenceArtifact (16 artifact types)
+    Fields: SHA-256 content_hash, hash_algorithm, storage_bucket/key,
+    WORM retention_tag (standard 3yr / regulatory 7yr / permanent),
+    hash chain (previous_artifact_id + chain_hash for tamper evidence)
+
+  SHARED PATTERNS:
+    • TimestampMixin: created_at/updated_at (timezone-aware)
+    • AuditMixin: created_by/updated_by
+    • SoftDeleteMixin: deleted_at/is_deleted
+    • All enums: native_enum=False (VARCHAR storage, Python-side validation)
+    • All IDs: UUID v4 (String(36))
+    • All metadata: JSONB columns for extensibility
+
+
+════════════════════════════════════════════════════════════════════════════════
+  6. GENAI MODEL GOVERNANCE (5 PRODUCTION MODELS)
+════════════════════════════════════════════════════════════════════════════════
+
+  Five production-grade GenAI models are registered in the governance system,
+  each with complete compliance mapping, evaluation history, and monitoring:
+
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │ ID              │ Model Name                  │ Base   │ Risk  │Status│
+  ├────────────────────────────────────────────────────────────────────────┤
+  │ WM-DOC-INT-001  │ WM Document Intelligence    │GPT-5.2 │ High  │Cert  │
+  │ WM-MTG-SUM-001  │ Client Meeting Summarizer   │GPT-5.2 │ High  │Monit │
+  │ WM-RSK-NAR-001  │ Portfolio Risk Narrator      │GPT-5.2 │Medium │Cert  │
+  │ WM-REG-DET-001  │ Regulatory Change Detector  │GPT-5.2 │Medium │Test  │
+  │ WM-CMP-CHK-001  │ Compliance Checker          │GPT-5.2 │ High  │Cert  │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  MODEL 1: WM DOCUMENT INTELLIGENCE (v1.0.0)
+    Methodology: RAG pipeline (ChromaDB vector store) + GPT-5.2 structured
+                 output (Pydantic) + business rules validation
+    Function:    Extracts structured financial data from unstructured
+                 documents (prospectuses, fund fact sheets, IPSs)
+    Outputs:     fund_name, ticker, expense_ratio, AUM, returns, risk
+                 metrics, top holdings, confidence_score
+    Evaluation:  96% quality, 96.7% safety, 95% RAG groundedness
+    Monitoring:  Daily canary prompts, accuracy_min=0.90, latency_p99<5s
+
+  MODEL 2: CLIENT MEETING SUMMARIZER (v1.3.0)
+    Methodology: GPT-5.2 structured output + Presidio PII detection +
+                 compliance rule engine + human-in-the-loop email approval
+    Function:    Summarizes advisor-client meeting transcripts into
+                 structured notes, action items, and compliance flags
+    Handles PII: Yes — client-facing, PII data classification
+    Evaluation:  93.3% quality, 95% safety, 100% PII redaction
+    Monitoring:  Daily, faithfulness_min=0.85, pii_leak_max=0.0
+
+  MODEL 3: PORTFOLIO RISK NARRATOR (v1.0.0)
+    Methodology: Data-to-text generation + GPT-5.2 structured output +
+                 fact-checking layer (verifies ALL cited numbers vs source)
+    Function:    Generates natural-language risk commentary from structured
+                 portfolio analytics for client reports and committees
+    Key Control: Every number in output is verified against input data
+    Evaluation:  95% quality, 96% fact verification (48/50 numbers verified)
+    Monitoring:  Weekly, fact_accuracy_min=0.95
+
+  MODEL 4: REGULATORY CHANGE DETECTOR (v1.0.0)
+    Methodology: Semantic embedding (text-embedding-3-large) + ChromaDB
+                 similarity search against WM control catalog + GPT-5.2
+                 impact analysis
+    Function:    Monitors SEC/FINRA/OCC updates and identifies changes
+                 impacting WM operations with semantic similarity matching
+    Evaluation:  93.3% quality (in testing phase)
+    Status:      Testing — not yet certified
+
+  MODEL 5: COMPLIANCE CHECKER (v1.0.0)
+    Methodology: GPT-5.2 classification + deterministic rule-based checks
+                 (promissory language regex, PII patterns) + FINRA 2210
+                 rule engine
+    Function:    Pre-send compliance screening for advisor communications
+    Key Control: Fully functional rule-based mode (no API key required)
+    Detects:     Promissory language ("guaranteed", "risk-free", "can't
+                 lose"), missing disclaimers, PII (SSN patterns)
+    Intelligence: Context-aware — skips "guarantee" in disclaimer phrases
+                 ("past performance does not guarantee future results")
+    Evaluation:  97.5% quality, 96% safety, 93.3% false positive rate
+
+  VENDOR LLMs UNDER GOVERNANCE:
+  ┌──────────────────────────────────────────────────────────┐
+  │  GPT-5.2           │ gpt-5.2-2025-12-11     │ OpenAI    │
+  │  Claude Opus 4.6   │ claude-opus-4-2026-02-03│ Anthropic │
+  │  Gemini 3 Pro      │ gemini-3-pro-2026-01-21 │ Google    │
+  │  text-embedding-3-large │ text-embedding-3-large │ OpenAI │
+  └──────────────────────────────────────────────────────────┘
+
+
+════════════════════════════════════════════════════════════════════════════════
+  7. CERTIFICATION PIPELINE
+════════════════════════════════════════════════════════════════════════════════
+
+  The certification pipeline produces an 8-section, audit-grade evidence
+  pack for each GenAI use case:
+
+  INTAKE ──→ RISK ASSESSMENT ──→ TESTING ──→ APPROVAL ──→ CERTIFICATION
+    │              │                 │            │              │
+    ▼              ▼                 ▼            ▼              ▼
+  Use case    Auto-computed     promptfoo     OPA policy     8-section
+  registration  risk rating    + PyRIT      approval gate   cert pack
+  + model/tool  + committee    + garak      (risk-tier      (JSON+PDF)
+    links        routing       + k6          thresholds)
+
+  CERTIFICATION PACK SECTIONS:
+    1. Use Case Summary & Risk Assessment
+    2. NIST AI 600-1 GenAI Profile Compliance
+    3. OWASP LLM Top 10 (2025) & Agentic Top 10 (2026) Mapping
+    4. Pre-Deployment Testing Results
+    5. Findings Register
+    6. Governance Approval Record (with decision_hash)
+    7. Ongoing Monitoring Plan
+    8. ISO/IEC 42001 AIMS Lifecycle Mapping (PDCA)
+
+  OUTPUT FORMATS: JSON (programmatic) + PDF (ReportLab, human-readable)
+
+
+════════════════════════════════════════════════════════════════════════════════
+  8. RISK RATING ENGINE
+════════════════════════════════════════════════════════════════════════════════
+
+  Automated risk scoring based on 9 weighted factors:
+
+  ┌────────────────────────────────────┬────────┬────────────────────────┐
+  │ Factor                             │ Weight │ Score Range            │
+  ├────────────────────────────────────┼────────┼────────────────────────┤
+  │ Data classification (PII/restr.)   │  0.20  │ 0.0 (public) – 1.0    │
+  │ Client-facing                      │  0.15  │ 0.0 or 1.0            │
+  │ Uses RAG (hallucination risk)      │  0.10  │ 0.0 or 1.0            │
+  │ Uses agents (autonomy risk)        │  0.15  │ 0.0 or 1.0            │
+  │ Uses tools (tool misuse risk)      │  0.10  │ 0.0 or 1.0            │
+  │ Uses memory (poisoning risk)       │  0.05  │ 0.0 or 1.0            │
+  │ No human-in-the-loop               │  0.10  │ 0.0 or 1.0            │
+  │ Handles PII                        │  0.10  │ 0.0 or 1.0            │
+  │ Model count complexity             │  0.05  │ Scaled 0.0 – 1.0      │
+  └────────────────────────────────────┴────────┴────────────────────────┘
+
+  RATING THRESHOLDS:
+    Critical: score ≥ 0.75 → 9 test suites, 4 approvers, 6-month recert
+    High:     score ≥ 0.55 → 6 test suites, 3 approvers, 6-month recert
+    Medium:   score ≥ 0.35 → 3 test suites, 2 approvers, 12-month recert
+    Low:      score ≥ 0.15 → 1 test suite, 1 approver, 12-month recert
+    Minimal:  score < 0.15 → 1 test suite, 1 approver, 24-month recert
+
+  COMMITTEE ROUTING:
+    Critical: Model Control → WM MRC → Enterprise RC → Board RC
+    High:     Model Control → WM MRC → Enterprise RC
+    Medium:   Model Control → WM MRC
+    Low:      Model Control Analyst
+
+
+════════════════════════════════════════════════════════════════════════════════
+  9. COMPLIANCE FRAMEWORK COVERAGE
+════════════════════════════════════════════════════════════════════════════════
+
+  Seven frameworks enforced simultaneously through the compliance matrix
+  (backend/app/services/compliance_mapping.py):
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  FRAMEWORK                    │ CONTROL TOWER IMPLEMENTATION            │
+  ├─────────────────────────────────────────────────────────────────────────┤
+  │  SR 11-7 / OCC                │                                        │
+  │    Model Definition           │ 12 ORM entities, AIBOM generation      │
+  │    Effective Challenge        │ OPA gates, multi-approver chains       │
+  │    Governance                 │ Risk-tier committee paths, audit trail │
+  │    Ongoing Monitoring         │ Canary prompts, drift detection, SLOs  │
+  ├─────────────────────────────────────────────────────────────────────────┤
+  │  NIST AI 600-1                │                                        │
+  │    Governance (GV)            │ Risk-tier committee routing, RBAC      │
+  │    Content Provenance (CP)    │ SHA-256 evidence chains, WORM storage  │
+  │    Pre-deployment Testing (PT)│ 3-layer eval pipeline, 10 test types   │
+  │    Incident Disclosure (ID)   │ Finding→Issue escalation, audit stream │
+  ├─────────────────────────────────────────────────────────────────────────┤
+  │  OWASP LLM Top 10 (2025)     │                                        │
+  │    LLM01 Prompt Injection     │ promptfoo red-team, guardrail cascade  │
+  │    LLM02 Insecure Output      │ Output sanitization, structured output │
+  │    LLM06 Sensitive Disclosure │ Presidio PII, PII eval suite           │
+  │    LLM07 Excessive Agency     │ Tool allowlists, approval gates        │
+  │    LLM09 Misinformation       │ Fact-checking layer, groundedness eval │
+  ├─────────────────────────────────────────────────────────────────────────┤
+  │  OWASP Agentic Top 10 (2026) │                                        │
+  │    ASI01 Agent Goal Hijack    │ agent_controls.rego, registered agents │
+  │    ASI02 Tool Misuse          │ Tool allowlist enforcement (7 tools)   │
+  │    ASI03 Privilege Abuse      │ IRSA pod-level IAM, Keycloak RBAC     │
+  │    ASI05 Unexpected RCE       │ Dangerous pattern blocklist (eval,exec)│
+  │    ASI06 Memory Poisoning     │ Memory write limits (max 10), provnce  │
+  │    ASI08 Cascading Failures   │ 5 tool calls/turn, 3 retry max        │
+  │    ASI10 Rogue Agents         │ Kill switch, agent registry            │
+  ├─────────────────────────────────────────────────────────────────────────┤
+  │  ISO/IEC 42001                │                                        │
+  │    Plan                       │ Use-case intake, risk assessment       │
+  │    Do                         │ Implementation, testing, eval          │
+  │    Check                      │ Monitoring, audits, canaries           │
+  │    Act                        │ Remediation, recertification           │
+  ├─────────────────────────────────────────────────────────────────────────┤
+  │  MITRE ATLAS                  │                                        │
+  │    Technique mapping          │ mitre_atlas_techniques on Model entity │
+  │    Detection                  │ garak vulnerability scanning           │
+  ├─────────────────────────────────────────────────────────────────────────┤
+  │  FINRA GenAI Controls         │                                        │
+  │    Communications (2210)      │ Compliance Checker model, rule engine  │
+  │    Suitability (2111)         │ Client-facing flag, suitability checks │
+  │    Supervision (3110/3120)    │ HITL flags, approval workflows         │
+  │    Recordkeeping              │ Prompt/output logging, version stamps  │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+════════════════════════════════════════════════════════════════════════════════
+  10. EVALUATION & RED-TEAM FRAMEWORK
+════════════════════════════════════════════════════════════════════════════════
+
+  Three-layer evaluation pipeline with 10 test types:
+
+  LAYER 1: promptfoo (Quality + Safety)
+    • 12 test cases across quality, safety, operational controls
+    • 3 providers: GPT-5.2 (primary), GPT-5.2-mini, Gemini 3 Pro
+    • LLM-as-judge rubric grading for subjective quality
+    • OWASP-aligned injection, PII leakage, and hallucination tests
+    • Cost tracking per test case
+
+  LAYER 2: promptfoo Red Team (Adversarial)
+    • 12 plugin categories: prompt injection, PII (direct/session/social),
+      excessive agency, hallucination, jailbreak, cross-session leak
+    • 7 attack strategies: basic, jailbreak, injection, multilingual
+      (es/fr/zh/ar), leetspeak, ROT13, base64
+    • 140+ adversarial test cases per run
+
+  LAYER 3: PyRIT + garak (Security)
+    • PyRIT: Financial advisor injection scenarios with GPT-5.2
+    • garak: 14 vulnerability probes across 6 OWASP categories
+      (prompt injection, data leakage, hallucination, encoding attacks,
+       toxicity, XSS/code injection)
+
+  EVALUATION TYPES:
+    1.  quality_correctness     — Golden prompt accuracy
+    2.  safety_security         — OWASP LLM Top 10 coverage
+    3.  rag_groundedness        — Faithfulness + relevance for RAG
+    4.  red_team_promptfoo      — Adversarial prompt injection
+    5.  red_team_pyrit          — Multi-turn security scenarios
+    6.  vulnerability_garak     — Automated vulnerability scanning
+    7.  operational_controls    — Boundary tests, citations, scope
+    8.  agentic_safety          — OWASP Agentic Top 10 coverage
+    9.  regression              — Daily regression canaries
+    10. canary                  — Production monitoring probes
+
+
+════════════════════════════════════════════════════════════════════════════════
+  11. SECURITY ARCHITECTURE
+════════════════════════════════════════════════════════════════════════════════
+
+  AUTHENTICATION & AUTHORIZATION
+    • Keycloak (OIDC) with 6 roles: admin, model_risk_officer,
+      evaluator, auditor, business_user, readonly
+    • JWT token validation on every API request
+    • RBAC enforced at endpoint level
+
+  DATA PROTECTION
+    • PostgreSQL: Alembic-managed row-level security policies
+    • S3: Object Lock (WORM) with GOVERNANCE mode retention
+    • KMS: All data encrypted at rest (RDS, S3, MSK, EBS)
+    • TLS: Istio mTLS for all service-to-service communication
+    • PII: Presidio + regex detection, redaction before logging
+
+  NETWORK SECURITY
+    • AWS WAF: Common rules, SQLi protection, IP rate limiting
+    • VPC: Private subnets for compute, database subnets isolated
+    • Security groups: Least-privilege ingress rules
+    • Network policies: Kubernetes namespace isolation
+
+  SECRETS MANAGEMENT
+    • HashiCorp Vault: API keys, DB credentials, certificates
+    • IRSA: Pod-level AWS IAM (no static credentials)
+    • local_config.py: Gitignored, never committed
+
+  CI/CD SECURITY
+    • Snyk: Python + Node dependency scanning
+    • Trivy: Container image scanning (CRITICAL/HIGH)
+    • Bandit: Python SAST
+    • Semgrep: Cross-language SAST
+    • GitHub Push Protection: Blocks committed secrets
+    • OPA: Policy syntax validation in CI
+
+
+════════════════════════════════════════════════════════════════════════════════
+  12. OPERATIONAL READINESS
+════════════════════════════════════════════════════════════════════════════════
+
+  OBSERVABILITY
+    • OpenTelemetry: Distributed tracing (traces, spans, context propagation)
+    • Prometheus: 9 custom metrics (request count, duration, evaluations)
+    • Grafana: Control Tower dashboard (infra/grafana/)
+    • Structured logging: structlog with JSON output, PII-free
+
+  SLO DEFINITIONS (ops/slos/):
+    • API availability: 99.95%
+    • API latency p99: < 2 seconds
+    • Evaluation completion: < 30 minutes
+    • Evidence integrity: 100% (SHA-256 verification)
+
+  RUNBOOKS (ops/runbooks/):
+    • api_high_latency.yaml: Escalation at 2h to technology-risk-director
+    • evidence_integrity_failure.yaml: Immediate model-risk-officer alert
+    • disaster_recovery.yaml: RTO 4h, RPO 1h
+
+  ALERTING (ops/alerting/):
+    • PagerDuty integration with severity-based routing
+
+  HELM PRODUCTION VALUES:
+    • Backend: 3 replicas, HPA (3–20), PDB min=2
+    • Frontend: 2 replicas, HPA (2–10)
+    • Worker: 2 replicas, HPA (2–10), 4 CPU / 8 GB memory limits
+    • Topology: Zone-aware scheduling (maxSkew=1)
+    • Redis: Sentinel mode for caching + rate limiting
+
+
+════════════════════════════════════════════════════════════════════════════════
+  13. TECHNOLOGY STACK
+════════════════════════════════════════════════════════════════════════════════
+
+  ┌────────────────────┬────────────────────────────────────────────────┐
+  │  CATEGORY          │  TECHNOLOGY                                    │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Backend           │  Python 3.13, FastAPI, SQLAlchemy 2.0,        │
+  │                    │  Pydantic v2, Alembic, structlog, orjson       │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Frontend          │  Next.js 15, React 19, TypeScript 5.7,        │
+  │                    │  Tailwind CSS v4, Radix UI (shadcn/ui)        │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Database          │  PostgreSQL 17, pgvector, Alembic migrations  │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  LLM Providers     │  OpenAI (GPT-5.2), Anthropic (Claude Opus    │
+  │                    │  4.6), Google (Gemini 3 Pro)                   │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Workflow          │  Temporal (certification orchestration)        │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Policy Engine     │  OPA + Rego (fail-closed, 4 policy files)     │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Evidence Storage  │  MinIO (local) / S3 with Object Lock (prod)   │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Event Streaming   │  Redpanda (local) / MSK Kafka (prod)          │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Auth              │  Keycloak (OIDC, 6 roles)                     │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Observability     │  OpenTelemetry, Prometheus, Grafana            │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Evaluation        │  promptfoo, PyRIT, garak, Arize Phoenix       │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Security Scanning │  Snyk, Trivy, Bandit, Semgrep                 │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Infrastructure    │  Terraform, Helm, Docker, Kubernetes (EKS)    │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  CI/CD             │  GitHub Actions (4 pipelines)                 │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Package Mgmt      │  uv (Python), npm (Node)                     │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Code Quality      │  Ruff (lint+format), Mypy, ESLint             │
+  ├────────────────────┼────────────────────────────────────────────────┤
+  │  Testing           │  pytest, Playwright (E2E), k6 (load)          │
+  └────────────────────┴────────────────────────────────────────────────┘
+
+
+════════════════════════════════════════════════════════════════════════════════
+  14. REPOSITORY STRUCTURE
+════════════════════════════════════════════════════════════════════════════════
+
+  control-tower/
+  ├── .github/workflows/          CI/CD pipelines (4 files)
+  │   ├── ci.yml                    Lint → Test → Build → Docker
+  │   ├── security-sast.yml         Snyk + Trivy + Bandit + Semgrep + OPA
+  │   ├── security-scan.yml         PyRIT + garak adversarial scans
+  │   └── eval.yml                  promptfoo evaluation pipeline
+  │
+  ├── backend/                    Python backend (109 files)
+  │   ├── app/
+  │   │   ├── api/v1/               12 endpoint modules (2,297 lines)
+  │   │   ├── models/               12 SQLAlchemy ORM entities (1,264 lines)
+  │   │   ├── schemas/              10 Pydantic v2 schemas (673 lines)
+  │   │   ├── services/             12 service modules (2,362 lines)
+  │   │   ├── integrations/         4 external integrations
+  │   │   ├── security/             Feature flags, Vault client
+  │   │   ├── utils/                Logging, OTEL, PDF, PII, hashing
+  │   │   └── workers/              Eval + monitoring workers
+  │   ├── alembic/                  Database migrations
+  │   ├── tests/                    Unit + integration + E2E + load (1,149 lines)
+  │   ├── Dockerfile                Multi-stage (uv + non-root)
+  │   └── pyproject.toml            Dependencies + Ruff + Mypy config
+  │
+  ├── frontend/                   Next.js frontend (20 files)
+  │   └── src/
+  │       ├── app/                   10 page directories
+  │       │   ├── dashboard/           Executive KPI dashboard
+  │       │   ├── models/              Model inventory (7 models)
+  │       │   ├── tools/               Tool/EUC inventory (8 tools)
+  │       │   ├── use-cases/           GenAI use case registry (8 UCs)
+  │       │   ├── evaluations/         Evaluation run history (8 runs)
+  │       │   ├── findings/            Findings register (7 findings)
+  │       │   ├── certifications/      Cert pack generation
+  │       │   ├── compliance/          Compliance matrix (7 frameworks)
+  │       │   ├── demo/                Live 5-model interactive demo
+  │       │   └── settings/            Platform configuration
+  │       ├── components/layout/     Sidebar with 10 nav links + 7 badges
+  │       ├── hooks/                 useApi, useMutation
+  │       └── lib/                   API client, types, utilities
+  │
+  ├── models/                     5 GenAI model implementations
+  │   ├── document-intelligence/    RAG + extraction
+  │   ├── meeting-summarizer/       Structured summarization
+  │   ├── portfolio-risk-narrator/  Data-to-text generation
+  │   ├── regulatory-change-detector/ Semantic similarity + analysis
+  │   └── compliance-checker/       Classification + rule engine
+  │
+  ├── policies/opa/               OPA policy files (437 lines)
+  │   ├── approval_gates.rego       Risk-tier approval logic
+  │   ├── agent_controls.rego       OWASP Agentic Top 10 enforcement
+  │   ├── data_classification.rego  Data handling policies
+  │   └── tool_permissions.rego     Tool allowlist enforcement
+  │
+  ├── eval/                       Evaluation configurations
+  │   ├── promptfoo/                Quality + red-team configs
+  │   ├── pyrit/                    Security scenario scripts
+  │   └── garak/                    Vulnerability scan presets
+  │
+  ├── workflows/temporal/         Temporal workflow definitions (870 lines)
+  │   ├── workflows/certification.py  Certification orchestration
+  │   ├── activities/                 Eval, evidence, notification
+  │   └── worker.py                   Temporal worker process
+  │
+  ├── deploy/
+  │   ├── terraform/                AWS infrastructure (662 lines)
+  │   └── helm/                     Kubernetes deployment (268 lines)
+  │
+  ├── infra/                      Local infrastructure configs
+  │   ├── docker-compose.yml        PG17, MinIO, Redpanda, Keycloak, etc.
+  │   ├── grafana/                  Dashboard JSON
+  │   ├── prometheus/               Scrape config
+  │   ├── otel/                     Collector config
+  │   └── keycloak/                 Realm export
+  │
+  ├── ops/                        Operational configurations
+  │   ├── slos/                     SLO + SOX/SOC2 definitions
+  │   ├── runbooks/                 Incident response procedures
+  │   └── alerting/                 PagerDuty rules
+  │
+  ├── scripts/                    Utility scripts
+  │   ├── seed_data.py              Database seeding (3 vendors, 4 models)
+  │   ├── generate_aibom.py         AI BOM generation (4 models)
+  │   └── generate_cert_pack.py     Cert pack CLI
+  │
+  └── security/                   Security configurations
+      ├── tls/istio_mtls.yaml       Service mesh mTLS
+      └── waf/waf_rules.yaml        WAF rule definitions
+
+
+════════════════════════════════════════════════════════════════════════════════
+  15. CI/CD PIPELINE
+════════════════════════════════════════════════════════════════════════════════
+
+  Four GitHub Actions workflows triggered on push/PR to main:
+
+  PIPELINE 1: CI (ci.yml)
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  backend-lint     → Ruff lint + format + Mypy type check            │
+  │  backend-test     → pytest (PG17 service container, Alembic)        │
+  │  frontend-lint    → TypeScript check + Next.js build                │
+  │  policy-test      → OPA syntax validation                          │
+  │  docker-build     → Backend + Frontend Docker images (after all ↑)  │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  PIPELINE 2: Security SAST (security-sast.yml)
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  snyk-python      → Dependency vulnerabilities (HIGH+)              │
+  │  snyk-node        → npm dependency scanning                         │
+  │  trivy-backend    → Container image CVE scan → GitHub Security tab  │
+  │  trivy-frontend   → Container image CVE scan → GitHub Security tab  │
+  │  bandit           → Python SAST (medium+ severity)                  │
+  │  semgrep          → Cross-language static analysis                  │
+  │  opa-test         → Policy syntax validation                        │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  PIPELINE 3: Security Scan (security-scan.yml)
+    → PyRIT adversarial scenarios + garak vulnerability probes
+
+  PIPELINE 4: Eval (eval.yml)
+    → promptfoo evaluation suite execution
+
+
+════════════════════════════════════════════════════════════════════════════════
+  16. LIVE SYSTEM DEMONSTRATION
+════════════════════════════════════════════════════════════════════════════════
+
+  The system runs locally with two processes:
+
+  BACKEND:  http://localhost:8000
+    /health           → System health check
+    /docs             → Interactive OpenAPI documentation
+    /metrics          → Prometheus metrics endpoint
+    /api/v1/...       → 12 REST API endpoint groups
+
+  FRONTEND: http://localhost:3000
+    10 fully interactive pages with real-time data
+
+  LIVE MODEL DEMOS (http://localhost:3000/demo):
+    All 5 GenAI models are interactive — enter text, click "Run Model",
+    see GPT-5.2 powered responses in real-time. Each model includes
+    rich, multiline placeholder examples demonstrating realistic inputs.
+
+    The compliance checker works fully deterministically (no API key
+    required) with context-aware false-positive suppression.
+
+  DASHBOARD (http://localhost:3000/dashboard):
+    Real-time KPI dashboard showing:
+    • 7 models, 8 tools, 8 GenAI use cases
+    • 7 findings (2 open critical/high)
+    • 8 evaluations (95.2% avg pass rate)
+    • 7 active compliance frameworks
+    • ISO 42001 PDCA lifecycle visualization
+    • API Connected status indicator
+
+
+════════════════════════════════════════════════════════════════════════════════
+  17. KEY DESIGN DECISIONS & RATIONALE
+════════════════════════════════════════════════════════════════════════════════
+
+  DECISION 1: Unified Platform (not separate tools)
+    Rationale: Models, tools, and GenAI use cases share governance
+    workflows, findings, approvals, and evidence. Separate tools create
+    silos that regulators specifically flag in SR 11-7 examinations.
+
+  DECISION 2: OPA for Policy (not application code)
+    Rationale: Policies change more frequently than code. OPA enables
+    policy updates without redeployment. Fail-closed default ensures
+    safety even during policy engine outages.
+
+  DECISION 3: SHA-256 Hash Chains for Evidence
+    Rationale: Regulators require tamper-evident audit trails. Content-
+    addressed storage with hash chains provides cryptographic proof that
+    no evidence has been modified post-creation.
+
+  DECISION 4: Three-Layer Evaluation (promptfoo + PyRIT + garak)
+    Rationale: No single tool covers all OWASP categories. promptfoo
+    excels at quality/functional testing, PyRIT at multi-turn security
+    scenarios, and garak at automated vulnerability discovery.
+
+  DECISION 5: Temporal for Workflow Orchestration
+    Rationale: Certification pipelines involve long-running processes
+    (evaluations can take 30+ minutes). Temporal provides durable
+    execution, automatic retries, and workflow visibility.
+
+  DECISION 6: PostgreSQL + pgvector (not separate vector DB)
+    Rationale: Simplifies operations by keeping vector search in the
+    same database as relational data. pgvector handles the RAG use
+    cases without adding another infrastructure component.
+
+  DECISION 7: Rule-Based Fallback for All Models
+    Rationale: LLM APIs can fail. Every model endpoint includes a
+    deterministic rule-based fallback that ensures the system remains
+    functional without any API key configured.
+
+  DECISION 8: native_enum=False for All SQLAlchemy Enums
+    Rationale: PostgreSQL native enums cannot be modified in-place.
+    VARCHAR storage with Python-side validation provides schema
+    flexibility without migration headaches.
+
+
+════════════════════════════════════════════════════════════════════════════════
+  18. QUANTITATIVE SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │  METRIC                                    │  VALUE                   │
+  ├────────────────────────────────────────────────────────────────────────┤
+  │  Total source files                        │  200                     │
+  │  Total lines of code                       │  15,400+                 │
+  │  Python modules                            │  109                     │
+  │  TypeScript/React components               │  20                      │
+  │  SQLAlchemy domain models                  │  12                      │
+  │  Pydantic schemas                          │  10                      │
+  │  API endpoint groups                       │  12                      │
+  │  Service modules                           │  12                      │
+  │  OPA policy files                          │  4 (437 lines)           │
+  │  Terraform (AWS infrastructure)            │  662 lines               │
+  │  Helm chart                                │  268 lines               │
+  │  CI/CD pipelines                           │  4                       │
+  │  GenAI model demos (live)                  │  5                       │
+  │  Compliance frameworks                     │  7                       │
+  │  Evaluation test types                     │  10                      │
+  │  Red-team attack categories                │  12                      │
+  │  Red-team attack strategies                │  7                       │
+  │  Frontend pages                            │  10                      │
+  │  Governed models (seed)                    │  7                       │
+  │  Governed tools (seed)                     │  8                       │
+  │  Governed use cases (seed)                 │  8                       │
+  │  Vendor LLMs under governance              │  3 (GPT-5.2, Opus 4.6,  │
+  │                                            │     Gemini 3 Pro)        │
+  │  Verification tests                        │  55/55 passing           │
+  │  Ruff lint                                 │  72/72 files clean       │
+  │  TypeScript                                │  0 errors                │
+  │  Old model references                      │  0 remaining             │
+  │  Hardcoded secrets in tracked files        │  0                       │
+  └────────────────────────────────────────────────────────────────────────┘
+
+
+════════════════════════════════════════════════════════════════════════════════
+
+  This document accompanies the Control Tower platform repository at:
+  https://github.com/fansari100/model-genai-control-tower
+
+  For questions or a live demonstration, contact Farooq Ansari.
+
+════════════════════════════════════════════════════════════════════════════════
