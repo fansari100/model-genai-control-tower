@@ -47,12 +47,13 @@ _SEED_SUMMARY = {
     },
     "compliance": {
         "frameworks": [
-            "SR 11-7",
+            "SR 11-7 / OCC",
             "NIST AI 600-1",
             "OWASP LLM Top 10 2025",
             "OWASP Agentic Top 10 2026",
             "ISO/IEC 42001",
             "MITRE ATLAS",
+            "FINRA GenAI Controls",
         ],
         "status": "active",
     },
@@ -179,12 +180,13 @@ async def _get_live_summary(db: AsyncSession):
         },
         "compliance": {
             "frameworks": [
-                "SR 11-7",
+                "SR 11-7 / OCC",
                 "NIST AI 600-1",
                 "OWASP LLM Top 10 2025",
                 "OWASP Agentic Top 10 2026",
                 "ISO/IEC 42001",
                 "MITRE ATLAS",
+                "FINRA GenAI Controls",
             ],
             "status": "active",
         },
