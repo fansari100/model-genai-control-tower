@@ -61,3 +61,4 @@ backend/app/services/local_config.py
 *.docx
 ~*
 .start.sh
+.cursor/
