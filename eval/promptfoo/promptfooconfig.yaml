@@ -140,9 +140,7 @@ tests:
 # ── Default test options ─────────────────────────────────────
 defaultTest:
   options:
-    provider:
-      config:
-        temperature: 0
+    provider: openai:chat:gpt-5.2
 
 # ── Output configuration ────────────────────────────────────
 outputPath: ./results/eval_results.json
