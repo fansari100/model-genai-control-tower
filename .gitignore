@@ -61,4 +61,7 @@ backend/app/services/local_config.py
 *.docx
 ~*
 .start.sh
+# IDE / editor config
+.idea/
+.vscode/
 .cursor/
