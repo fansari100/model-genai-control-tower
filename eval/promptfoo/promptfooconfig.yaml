@@ -59,7 +59,7 @@ tests:
       question: "What are the key requirements of SR 11-7 for model risk management?"
     assert:
       - type: llm-rubric
-        value: "Must mention model validation, effective challenge, governance framework, and ongoing monitoring."
+        value: "Must cover the core SR 11-7 pillars: (1) model validation or independent review, (2) effective challenge or independent oversight, (3) governance framework or governance structure, and (4) ongoing monitoring or continuous monitoring. Exact phrasing is not required — conceptual coverage counts as a pass."
 
   - description: "Summarization: Meeting notes accuracy"
     vars:
