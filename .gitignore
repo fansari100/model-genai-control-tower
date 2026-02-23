@@ -64,4 +64,4 @@ backend/app/services/local_config.py
 # IDE / editor config
 .idea/
 .vscode/
-.cursor/
+.c*sor/
