@@ -62,7 +62,7 @@ export default function FindingsPage() {
 
       <div className="space-y-3">
         {filtered.map((finding) => (
-          <div key={finding.id} className="rounded-xl border bg-white p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+          <div key={finding.id} className="rounded-xl border bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-3">
                 <AlertTriangle className={cn("h-5 w-5 mt-0.5", finding.severity === "critical" ? "text-red-600" : finding.severity === "high" ? "text-orange-500" : "text-yellow-500")} />

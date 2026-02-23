@@ -113,7 +113,7 @@ export default function EvaluationsPage() {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {filtered.map((ev) => (
-              <tr key={ev.id} className="hover:bg-gray-50 cursor-pointer">
+              <tr key={ev.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <FlaskConical className="h-5 w-5 text-gray-400" />

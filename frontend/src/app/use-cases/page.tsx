@@ -79,7 +79,7 @@ export default function UseCasesPage() {
       {/* Cards View */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {filtered.map((uc) => (
-          <div key={uc.id} className="rounded-xl border bg-white p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+          <div key={uc.id} className="rounded-xl border bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
                 <Sparkles className="h-5 w-5 text-indigo-500" />
